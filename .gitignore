@@ -217,3 +217,16 @@ __marimo__/
 
 # Cache
 **/data_cache/
+
+# Claude Code
+.claude/
+
+# Cursor
+.cursorindexingignore
+.cursor/
+
+# Specstory
+.specstory/
+
+# Eval results
+eval_results/
