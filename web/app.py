@@ -4,13 +4,17 @@ import os
 import sys
 import json
 import asyncio
+import secrets
 import traceback
 from datetime import date
 from pathlib import Path
+from urllib.parse import urlencode
 
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, StreamingResponse
+import httpx
+from fastapi import FastAPI, Request, Depends
+from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.sessions import SessionMiddleware
 from pydantic import BaseModel
 from typing import Optional
 
@@ -29,11 +33,38 @@ except ImportError:
 if os.environ.get("ONE_API_KEY") and not os.environ.get("OPENAI_API_KEY"):
     os.environ["OPENAI_API_KEY"] = os.environ["ONE_API_KEY"]
 
+# --- AgentPit OAuth2 configuration ---
+AGENTPIT_CLIENT_ID = os.environ.get("AGENTPIT_CLIENT_ID", "cmmvv7gpd000560c8yixfhvp4")
+AGENTPIT_CLIENT_SECRET = os.environ.get("AGENTPIT_CLIENT_SECRET", "cmmvv7gpd000660c8mq0xfjk2")
+AGENTPIT_REDIRECT_URI = os.environ.get("AGENTPIT_REDIRECT_URI", "https://trading.agentpit.io/api/auth/callback")
+AGENTPIT_AUTHORIZE_URL = "https://agentpit.io/api/oauth/authorize"
+AGENTPIT_TOKEN_URL = "https://agentpit.io/api/oauth/token"
+AGENTPIT_USERINFO_URL = "https://agentpit.io/api/oauth/userinfo"
+
+SESSION_SECRET_KEY = os.environ.get("SESSION_SECRET_KEY", secrets.token_hex(32))
+
 app = FastAPI(title="TradingAgents", docs_url="/api/docs")
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SESSION_SECRET_KEY,
+    session_cookie="ta_session",
+    max_age=86400,  # 24 hours
+    same_site="lax",
+    https_only=os.environ.get("HTTPS_ONLY", "true").lower() == "true",
+)
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
 
 # Serve skill files from project root
 SKILLS_DIR = PROJECT_ROOT
+
+
+# --- Auth helpers ---
+
+async def require_auth(request: Request):
+    """Dependency: reject unauthenticated requests."""
+    if not request.session.get("access_token"):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=401, detail="Unauthorized — please login via AgentPit")
 
 
 class AnalysisRequest(BaseModel):
@@ -69,9 +100,68 @@ def get_analysts(depth: str):
 
 
 @app.get("/", response_class=HTMLResponse)
-async def index():
-    html_path = Path(__file__).parent / "static" / "index.html"
+async def index(request: Request):
+    if request.session.get("access_token"):
+        html_path = Path(__file__).parent / "static" / "index.html"
+    else:
+        html_path = Path(__file__).parent / "static" / "login.html"
     return HTMLResponse(html_path.read_text(encoding="utf-8"))
+
+
+@app.get("/api/auth/login")
+async def auth_login(request: Request):
+    """Redirect user to AgentPit OAuth2 authorization page."""
+    state = secrets.token_urlsafe(32)
+    request.session["oauth_state"] = state
+    params = urlencode({
+        "response_type": "code",
+        "client_id": AGENTPIT_CLIENT_ID,
+        "redirect_uri": AGENTPIT_REDIRECT_URI,
+        "state": state,
+    })
+    return RedirectResponse(url=f"{AGENTPIT_AUTHORIZE_URL}?{params}")
+
+
+@app.get("/api/auth/callback")
+async def auth_callback(request: Request, code: str = "", state: str = ""):
+    """Handle AgentPit OAuth2 callback: exchange code for token."""
+    # Validate state to prevent CSRF
+    saved_state = request.session.pop("oauth_state", None)
+    if not state or state != saved_state:
+        return HTMLResponse("<h3>授权失败：state 校验不通过，请重新登录</h3>", status_code=400)
+
+    if not code:
+        return HTMLResponse("<h3>授权失败：未收到授权码</h3>", status_code=400)
+
+    # Exchange authorization code for access token
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(AGENTPIT_TOKEN_URL, data={
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": AGENTPIT_REDIRECT_URI,
+                "client_id": AGENTPIT_CLIENT_ID,
+                "client_secret": AGENTPIT_CLIENT_SECRET,
+            })
+            resp.raise_for_status()
+            token_data = resp.json()
+    except Exception as e:
+        return HTMLResponse(f"<h3>获取 Token 失败：{e}</h3>", status_code=502)
+
+    access_token = token_data.get("access_token")
+    if not access_token:
+        return HTMLResponse("<h3>授权失败：未获取到 access_token</h3>", status_code=502)
+
+    # Store token in session
+    request.session["access_token"] = access_token
+    return RedirectResponse(url="/", status_code=302)
+
+
+@app.get("/api/auth/logout")
+async def auth_logout(request: Request):
+    """Clear session and redirect to login page."""
+    request.session.clear()
+    return RedirectResponse(url="/", status_code=302)
 
 
 @app.get("/skills/{skill_name}.md")
@@ -87,7 +177,7 @@ async def get_skill(skill_name: str):
 
 
 @app.post("/api/analyze/sync")
-async def analyze_sync(req: AnalysisRequest):
+async def analyze_sync(req: AnalysisRequest, _auth=Depends(require_auth)):
     """Synchronous analysis endpoint — returns full JSON result (for curl/OpenClaw)."""
     trade_date = req.trade_date or date.today().strftime("%Y-%m-%d")
 
@@ -114,7 +204,7 @@ async def analyze_sync(req: AnalysisRequest):
 
 
 @app.post("/api/analyze")
-async def analyze(req: AnalysisRequest):
+async def analyze(req: AnalysisRequest, _auth=Depends(require_auth)):
     """Run analysis and stream results via SSE."""
     trade_date = req.trade_date or date.today().strftime("%Y-%m-%d")
 

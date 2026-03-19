@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradingAgents - Login</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+.login-card {
+  background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 16px;
+  padding: 48px 40px; text-align: center; max-width: 420px; width: 90%;
+}
+
+.logo h1 { font-size: 32px; color: #fff; margin-bottom: 6px; }
+.logo h1 span { color: #4ecdc4; }
+.logo .subtitle { color: #888; font-size: 14px; margin-bottom: 36px; }
+
+.divider {
+  height: 1px; background: #2a2a4a; margin: 0 0 32px;
+}
+
+.login-hint { color: #888; font-size: 14px; margin-bottom: 24px; line-height: 1.6; }
+
+.btn-login {
+  display: inline-block; padding: 14px 40px;
+  background: linear-gradient(135deg, #4ecdc4, #44a08d); color: #fff; border: none;
+  border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s; text-decoration: none;
+  letter-spacing: 0.5px;
+}
+.btn-login:hover { opacity: 0.88; transform: translateY(-1px); }
+.btn-login:active { transform: translateY(0); }
+
+.footer { margin-top: 32px; color: #555; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="login-card">
+  <div class="logo">
+    <h1><span>Trading</span>Agents</h1>
+    <div class="subtitle">AI-Powered Multi-Agent Stock Analysis</div>
+  </div>
+  <div class="divider"></div>
+  <div class="login-hint">请通过 AgentPit 平台授权登录后使用股票分析功能</div>
+  <a class="btn-login" href="/api/auth/login">agentpit 授权登陆</a>
+</div>
+
+<div class="footer">Powered by TradingAgents v0.2.1</div>
+
+</body>
+</html>
