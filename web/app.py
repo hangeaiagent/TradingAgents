@@ -327,6 +327,28 @@ async def user_info(request: Request, _auth=Depends(require_auth)):
     user_id = request.session.get("user_id", "")
     records = _usage_store.get(user_id, [])
 
+    # Monthly aggregation
+    monthly: dict = {}
+    for r in records:
+        ts = r.get("timestamp", "")
+        month_key = ts[:7] if len(ts) >= 7 else "unknown"  # "2026-03"
+        if month_key not in monthly:
+            monthly[month_key] = {
+                "month": month_key, "analyses": 0,
+                "tokens_in": 0, "tokens_out": 0,
+                "llm_calls": 0, "tool_calls": 0, "total_time_ms": 0,
+            }
+        m = monthly[month_key]
+        m["analyses"] += 1
+        m["tokens_in"] += r.get("tokens_in", 0)
+        m["tokens_out"] += r.get("tokens_out", 0)
+        m["llm_calls"] += r.get("llm_calls", 0)
+        m["tool_calls"] += r.get("tool_calls", 0)
+        m["total_time_ms"] += r.get("elapsed_ms", 0)
+
+    # Sort months descending
+    monthly_list = sorted(monthly.values(), key=lambda x: x["month"], reverse=True)
+
     return {
         "name": request.session.get("user_name", ""),
         "email": request.session.get("user_email", ""),
@@ -336,6 +358,8 @@ async def user_info(request: Request, _auth=Depends(require_auth)):
             "total_tokens_in": sum(r.get("tokens_in", 0) for r in records),
             "total_tokens_out": sum(r.get("tokens_out", 0) for r in records),
             "total_llm_calls": sum(r.get("llm_calls", 0) for r in records),
+            "total_time_ms": sum(r.get("elapsed_ms", 0) for r in records),
+            "monthly": monthly_list,
             "records": records[-50:],  # last 50
         },
     }
