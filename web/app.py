@@ -254,6 +254,14 @@ async def billing_page(request: Request):
     return HTMLResponse(html_path.read_text(encoding="utf-8"))
 
 
+@app.get("/history", response_class=HTMLResponse)
+async def history_page(request: Request):
+    if not request.session.get("access_token"):
+        return RedirectResponse(url="/", status_code=302)
+    html_path = Path(__file__).parent / "static" / "history.html"
+    return HTMLResponse(html_path.read_text(encoding="utf-8"))
+
+
 # ---------------------------------------------------------------------------
 # Routes — auth
 # ---------------------------------------------------------------------------
@@ -422,6 +430,45 @@ async def user_info(request: Request, _auth=Depends(require_auth)):
 
 
 # ---------------------------------------------------------------------------
+# Routes — history
+# ---------------------------------------------------------------------------
+
+@app.get("/api/history")
+async def get_history(request: Request, _auth=Depends(require_auth)):
+    """Return analysis history with full reports (without report body in list)."""
+    user_id = request.session.get("user_id", "")
+    records = _usage_store.get(user_id, [])
+    # Return list without heavy report field
+    items = []
+    for i, r in enumerate(records):
+        items.append({
+            "index": i,
+            "ticker": r.get("ticker", ""),
+            "trade_date": r.get("trade_date", ""),
+            "decision": r.get("decision", ""),
+            "tokens_in": r.get("tokens_in", 0),
+            "tokens_out": r.get("tokens_out", 0),
+            "llm_calls": r.get("llm_calls", 0),
+            "elapsed_ms": r.get("elapsed_ms", 0),
+            "model": r.get("model", ""),
+            "timestamp": r.get("timestamp", ""),
+            "has_report": r.get("report") is not None,
+        })
+    items.reverse()  # newest first
+    return {"items": items}
+
+
+@app.get("/api/history/{idx}")
+async def get_history_detail(idx: int, request: Request, _auth=Depends(require_auth)):
+    """Return a single history record with full report."""
+    user_id = request.session.get("user_id", "")
+    records = _usage_store.get(user_id, [])
+    if idx < 0 or idx >= len(records):
+        return JSONResponse({"error": "not found"}, status_code=404)
+    return records[idx]
+
+
+# ---------------------------------------------------------------------------
 # Routes — skills
 # ---------------------------------------------------------------------------
 
@@ -468,7 +515,8 @@ async def analyze_sync(req: AnalysisRequest, request: Request, _auth=Depends(req
         model_name = req.model or config.get("deep_think_llm", "")
         stats = stats_cb.get_stats()
 
-        _record_usage(request, req.ticker, trade_date, decision, stats, elapsed_ms, model_name)
+        _record_usage(request, req.ticker, trade_date, decision, stats, elapsed_ms, model_name,
+                      report=report)
 
         asyncio.ensure_future(report_usage_to_agentpit(
             access_token, stats, model_name, "/api/analyze/sync", elapsed_ms, 200,
@@ -563,7 +611,8 @@ async def analyze(req: AnalysisRequest, request: Request, _auth=Depends(require_
             stats = stats_cb.get_stats()
 
             usage_record = _record_usage(
-                request, req.ticker, trade_date, decision, stats, elapsed_ms, model_name
+                request, req.ticker, trade_date, decision, stats, elapsed_ms, model_name,
+                report=report,
             )
 
             yield sse({
@@ -609,7 +658,8 @@ def _detect_progress(state: dict, seen: set, q: queue.Queue):
 # Usage recording
 # ---------------------------------------------------------------------------
 
-def _record_usage(request, ticker, trade_date, decision, stats, elapsed_ms, model_name):
+def _record_usage(request, ticker, trade_date, decision, stats, elapsed_ms, model_name,
+                   report=None):
     user_id = request.session.get("user_id", "")
     record = {
         "ticker": ticker,
@@ -621,6 +671,7 @@ def _record_usage(request, ticker, trade_date, decision, stats, elapsed_ms, mode
         "tool_calls": stats.get("tool_calls", 0),
         "elapsed_ms": elapsed_ms,
         "model": model_name,
+        "report": report,
         "timestamp": datetime.now().isoformat(),
     }
     _usage_store[user_id].append(record)

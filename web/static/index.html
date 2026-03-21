@@ -27,12 +27,19 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .lang-switch { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
 .lang-switch button { background: transparent; border: none; color: var(--muted); font-size: 12px; padding: 4px 10px; cursor: pointer; transition: .2s; }
 .lang-switch button.active { background: var(--accent); color: #fff; }
-.user-chip { cursor: pointer; }
+.user-chip { cursor: pointer; position: relative; }
 .user-chip:hover { border-color: var(--accent); }
 .btn-header { color: var(--muted); font-size: 12px; text-decoration: none; padding: 5px 12px; border: 1px solid var(--border); border-radius: 6px; transition: .2s; }
 .btn-header:hover { color: #fff; border-color: var(--accent); }
 
-.user-chip { text-decoration: none; }
+/* ── User dropdown menu ──────────────────────────────── */
+.user-menu-wrap { position: relative; display: none; }
+.user-menu-wrap.show { display: block; }
+.user-dropdown { display: none; position: absolute; top: calc(100% + 6px); right: 0; background: var(--card); border: 1px solid var(--border); border-radius: 8px; min-width: 180px; box-shadow: 0 6px 20px rgba(0,0,0,.4); z-index: 50; overflow: hidden; }
+.user-dropdown.open { display: block; }
+.user-dropdown a { display: flex; align-items: center; gap: 8px; padding: 10px 16px; color: #ccc; text-decoration: none; font-size: 13px; transition: background .15s; }
+.user-dropdown a:hover { background: rgba(78,205,196,0.08); color: #fff; }
+.user-dropdown a .menu-icon { color: var(--accent); font-size: 14px; width: 18px; text-align: center; }
 
 /* ── Container ──────────────────────────────────────── */
 .container { max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
@@ -180,10 +187,16 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
     <div class="subtitle" id="txt-subtitle"></div>
   </div>
   <div class="header-right">
-    <a class="user-chip" id="user-chip" style="display:none" href="/billing">
-      <div class="user-avatar" id="user-avatar"></div>
-      <span id="user-name-display"></span>
-    </a>
+    <div class="user-menu-wrap" id="user-menu-wrap">
+      <div class="user-chip" id="user-chip" onclick="toggleUserMenu(event)">
+        <div class="user-avatar" id="user-avatar"></div>
+        <span id="user-name-display"></span>
+      </div>
+      <div class="user-dropdown" id="user-dropdown">
+        <a href="/billing"><span class="menu-icon">&#9783;</span><span id="menu-billing"></span></a>
+        <a href="/history"><span class="menu-icon">&#9776;</span><span id="menu-history"></span></a>
+      </div>
+    </div>
     <div class="lang-switch">
       <button id="btn-zh" onclick="setLang('zh')">ZH</button>
       <button id="btn-en" onclick="setLang('en')">EN</button>
@@ -305,6 +318,7 @@ const I18N = {
     tokIn: '输入 Token', tokOut: '输出 Token', tokLlm: 'LLM 调用',
     tokTool: '工具调用', tokTime: '耗时',
     download: '下载报告', dlMd: '下载 Markdown', dlPdf: '下载 PDF',
+    menuBilling: '我的账单', menuHistory: '历史分析',
   },
   en: {
     subtitle: 'AI-Powered Multi-Agent Stock Analysis',
@@ -321,6 +335,7 @@ const I18N = {
     tokIn: 'Input Tokens', tokOut: 'Output Tokens', tokLlm: 'LLM Calls',
     tokTool: 'Tool Calls', tokTime: 'Elapsed',
     download: 'Download Report', dlMd: 'Markdown (.md)', dlPdf: 'PDF (.pdf)',
+    menuBilling: 'My Billing', menuHistory: 'Analysis History',
   }
 };
 
@@ -384,6 +399,8 @@ function applyI18n() {
   document.getElementById('txt-error-title').textContent = t('errorTitle');
   document.getElementById('txt-decision-label').textContent = t('decision');
   document.getElementById('usage-toggle').textContent = t('usageToggle');
+  document.getElementById('menu-billing').textContent = t('menuBilling');
+  document.getElementById('menu-history').textContent = t('menuHistory');
   document.getElementById('txt-download').textContent = t('download');
   document.getElementById('btn-dl-md').textContent = t('dlMd');
   document.getElementById('btn-dl-pdf').textContent = t('dlPdf');
@@ -428,7 +445,17 @@ function renderUserChip(info) {
     nameEl.textContent = displayName;
   }
   chip.style.display = 'flex';
+  document.getElementById('user-menu-wrap').className = 'user-menu-wrap show';
 }
+
+function toggleUserMenu(e) {
+  e.stopPropagation();
+  document.getElementById('user-dropdown').classList.toggle('open');
+}
+// Close dropdown when clicking outside
+document.addEventListener('click', function() {
+  document.getElementById('user-dropdown').classList.remove('open');
+});
 
 function renderUsageBar(usage) {
   if (!usage) return;
