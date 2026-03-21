@@ -5,165 +5,488 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TradingAgents - AI Stock Analysis</title>
 <style>
+:root {
+  --bg: #0f1117; --card: #1a1a2e; --border: #2a2a4a;
+  --text: #e0e0e0; --muted: #888; --dim: #555;
+  --accent: #4ecdc4; --accent2: #44a08d;
+  --green: #2d6a4f; --red: #6a2d2d; --yellow: #6a6a2d;
+}
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-/* Header */
-.header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 20px 40px; border-bottom: 1px solid #2a2a4a; display: flex; align-items: center; justify-content: space-between; }
-.header h1 { font-size: 24px; color: #fff; }
-.header h1 span { color: #4ecdc4; }
-.header .subtitle { color: #888; font-size: 13px; margin-top: 4px; }
+/* ── Header ─────────────────────────────────────────── */
+.header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 14px 32px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.header-left h1 { font-size: 22px; color: #fff; }
+.header-left h1 span { color: var(--accent); }
+.header-left .subtitle { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.user-chip { display: flex; align-items: center; gap: 8px; background: rgba(78,205,196,0.08); border: 1px solid rgba(78,205,196,0.2); border-radius: 20px; padding: 4px 14px 4px 4px; font-size: 13px; color: #ccc; }
+.user-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--accent2); display: flex; align-items: center; justify-content: center; font-size: 13px; color: #fff; font-weight: 600; overflow: hidden; }
+.user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.lang-switch { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.lang-switch button { background: transparent; border: none; color: var(--muted); font-size: 12px; padding: 4px 10px; cursor: pointer; transition: .2s; }
+.lang-switch button.active { background: var(--accent); color: #fff; }
+.btn-header { color: var(--muted); font-size: 12px; text-decoration: none; padding: 5px 12px; border: 1px solid var(--border); border-radius: 6px; transition: .2s; }
+.btn-header:hover { color: #fff; border-color: var(--accent); }
 
-/* Main */
-.container { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
+/* ── Container ──────────────────────────────────────── */
+.container { max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
 
-/* Form */
-.form-card { background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; padding: 28px; margin-bottom: 24px; }
-.form-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
-.form-group { flex: 1; min-width: 140px; }
-.form-group label { display: block; font-size: 12px; color: #888; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+/* ── Usage bar ──────────────────────────────────────── */
+.usage-bar { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 24px; margin-bottom: 20px; }
+.usage-summary { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+.usage-item { font-size: 13px; color: var(--muted); }
+.usage-item b { color: var(--accent); font-weight: 600; margin-right: 2px; }
+.usage-toggle { margin-left: auto; font-size: 12px; color: var(--dim); cursor: pointer; user-select: none; transition: .2s; }
+.usage-toggle:hover { color: var(--accent); }
+.usage-history { display: none; margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px; overflow-x: auto; }
+.usage-history.open { display: block; }
+.usage-history table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.usage-history th { text-align: left; color: var(--accent); padding: 6px 10px; border-bottom: 1px solid var(--border); font-weight: 500; }
+.usage-history td { padding: 5px 10px; color: #bbb; border-bottom: 1px solid rgba(42,42,74,0.5); }
+.usage-history .dec-BUY { color: var(--accent); } .usage-history .dec-SELL { color: #ff6b6b; } .usage-history .dec-HOLD { color: #ffd93d; }
+
+/* ── Form ───────────────────────────────────────────── */
+.form-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+.form-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; }
+.form-group { flex: 1; min-width: 130px; }
+.form-group label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .5px; }
 .form-group input, .form-group select {
-  width: 100%; padding: 10px 14px; background: #0f1117; border: 1px solid #333; border-radius: 8px;
-  color: #fff; font-size: 14px; outline: none; transition: border-color 0.2s;
+  width: 100%; padding: 9px 12px; background: var(--bg); border: 1px solid #333; border-radius: 8px;
+  color: #fff; font-size: 14px; outline: none; transition: border-color .2s;
 }
-.form-group input:focus, .form-group select:focus { border-color: #4ecdc4; }
-.form-group input::placeholder { color: #555; }
-
+.form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+.form-group input::placeholder { color: var(--dim); }
 .btn-analyze {
-  padding: 10px 32px; background: linear-gradient(135deg, #4ecdc4, #44a08d); color: #fff; border: none;
-  border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity 0.2s;
-  white-space: nowrap; height: 42px;
+  padding: 9px 28px; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; border: none;
+  border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity .2s; white-space: nowrap; height: 40px;
 }
-.btn-analyze:hover { opacity: 0.85; }
-.btn-analyze:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-analyze:hover { opacity: .85; } .btn-analyze:disabled { opacity: .4; cursor: not-allowed; }
 
-/* Status */
-.status-bar { display: none; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; padding: 20px 28px; margin-bottom: 24px; }
-.status-bar.active { display: flex; align-items: center; gap: 14px; }
-.spinner { width: 24px; height: 24px; border: 3px solid #333; border-top-color: #4ecdc4; border-radius: 50%; animation: spin 0.8s linear infinite; }
+/* ── Progress panel ─────────────────────────────────── */
+.progress-panel { display: none; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; margin-bottom: 20px; }
+.progress-panel.active { display: block; }
+.progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.progress-title { font-size: 14px; font-weight: 600; color: #ccc; }
+.progress-elapsed { font-size: 13px; color: var(--dim); font-variant-numeric: tabular-nums; }
+
+.timeline { display: flex; flex-direction: column; gap: 4px; }
+.tl-stage { margin-bottom: 6px; }
+.tl-stage-header { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; font-weight: 600; color: var(--muted); }
+.tl-stage-header.active { color: var(--accent); }
+.tl-stage-header.done { color: var(--green); }
+.tl-agent { display: flex; align-items: flex-start; gap: 8px; padding: 3px 0 3px 24px; font-size: 12px; color: var(--dim); transition: color .3s; }
+.tl-agent.done { color: #aaa; }
+.tl-agent.active { color: var(--accent); }
+.tl-icon { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; display: flex; align-items: center; justify-content: center; }
+.tl-icon-pending { width: 8px; height: 8px; border: 1.5px solid var(--dim); border-radius: 50%; }
+.tl-icon-active { width: 10px; height: 10px; border: 2px solid var(--accent); border-top-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; }
+.tl-icon-done { color: var(--accent); font-size: 13px; line-height: 1; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.status-text { color: #aaa; font-size: 14px; }
-.elapsed { margin-left: auto; color: #666; font-size: 13px; font-variant-numeric: tabular-nums; }
+.tl-name { font-weight: 500; white-space: nowrap; }
+.tl-preview { color: var(--dim); font-size: 11px; margin-top: 2px; max-height: 32px; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; word-break: break-all; }
 
-/* Decision banner */
-.decision-banner { display: none; border-radius: 12px; padding: 24px 28px; margin-bottom: 24px; text-align: center; }
+/* ── Decision banner ────────────────────────────────── */
+.decision-banner { display: none; border-radius: 12px; padding: 22px 28px; margin-bottom: 20px; text-align: center; }
 .decision-banner.show { display: block; }
-.decision-banner.BUY { background: linear-gradient(135deg, #1a3a2a, #0f2a1a); border: 1px solid #2d6a4f; }
-.decision-banner.SELL { background: linear-gradient(135deg, #3a1a1a, #2a0f0f); border: 1px solid #6a2d2d; }
-.decision-banner.HOLD { background: linear-gradient(135deg, #3a3a1a, #2a2a0f); border: 1px solid #6a6a2d; }
-.decision-label { font-size: 13px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
-.decision-value { font-size: 36px; font-weight: 700; margin-top: 4px; }
-.decision-banner.BUY .decision-value { color: #4ecdc4; }
+.decision-banner.BUY { background: linear-gradient(135deg, #1a3a2a, #0f2a1a); border: 1px solid var(--green); }
+.decision-banner.SELL { background: linear-gradient(135deg, #3a1a1a, #2a0f0f); border: 1px solid var(--red); }
+.decision-banner.HOLD { background: linear-gradient(135deg, #3a3a1a, #2a2a0f); border: 1px solid var(--yellow); }
+.decision-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+.decision-value { font-size: 34px; font-weight: 700; margin-top: 4px; }
+.decision-banner.BUY .decision-value { color: var(--accent); }
 .decision-banner.SELL .decision-value { color: #ff6b6b; }
 .decision-banner.HOLD .decision-value { color: #ffd93d; }
-.decision-meta { color: #888; font-size: 14px; margin-top: 8px; }
+.decision-meta { color: var(--muted); font-size: 13px; margin-top: 6px; }
 
-/* Report */
-.report { display: none; }
-.report.show { display: block; }
-.section { background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
-.section-header {
-  padding: 16px 24px; cursor: pointer; display: flex; align-items: center; justify-content: space-between;
-  user-select: none; transition: background 0.2s;
-}
+/* ── Token usage bar (after result) ─────────────────── */
+.token-bar { display: none; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 24px; margin-bottom: 20px; }
+.token-bar.show { display: flex; gap: 24px; flex-wrap: wrap; align-items: center; }
+.token-item { font-size: 13px; color: var(--muted); }
+.token-item b { color: #ccc; font-weight: 600; }
+
+/* ── Report ──────────────────────────────────────────── */
+.report { display: none; } .report.show { display: block; }
+.section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 14px; overflow: hidden; }
+.section-header { padding: 14px 22px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none; transition: background .2s; }
 .section-header:hover { background: #222244; }
-.section-title { font-size: 16px; font-weight: 600; }
-.section-arrow { color: #666; transition: transform 0.2s; }
+.section-title { font-size: 15px; font-weight: 600; }
+.section-arrow { color: #666; transition: transform .2s; font-size: 12px; }
 .section-header.open .section-arrow { transform: rotate(90deg); }
-.section-body { display: none; border-top: 1px solid #2a2a4a; }
-.section-body.open { display: block; }
-.item { padding: 20px 24px; border-bottom: 1px solid #1f1f3a; }
+.section-body { display: none; border-top: 1px solid var(--border); } .section-body.open { display: block; }
+.item { padding: 18px 22px; border-bottom: 1px solid #1f1f3a; }
 .item:last-child { border-bottom: none; }
-.item-name { font-size: 13px; font-weight: 600; color: #4ecdc4; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-.item-content { font-size: 14px; line-height: 1.7; color: #ccc; white-space: pre-wrap; word-wrap: break-word; }
-.item-content h1, .item-content h2, .item-content h3 { color: #fff; margin: 16px 0 8px; }
-.item-content strong { color: #fff; }
-.item-content table { width: 100%; border-collapse: collapse; margin: 12px 0; }
-.item-content th, .item-content td { padding: 8px 12px; border: 1px solid #333; text-align: left; font-size: 13px; }
-.item-content th { background: #222; color: #4ecdc4; }
+.item-name { font-size: 12px; font-weight: 600; color: var(--accent); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .5px; }
+.item-content { font-size: 13px; line-height: 1.7; color: #ccc; white-space: pre-wrap; word-wrap: break-word; }
 
-/* Error */
-.error-box { display: none; background: #2a0f0f; border: 1px solid #6a2d2d; border-radius: 12px; padding: 20px 28px; margin-bottom: 24px; }
+/* ── Error ───────────────────────────────────────────── */
+.error-box { display: none; background: #2a0f0f; border: 1px solid var(--red); border-radius: 12px; padding: 18px 24px; margin-bottom: 20px; }
 .error-box.show { display: block; }
-.error-box .title { color: #ff6b6b; font-weight: 600; margin-bottom: 8px; }
-.error-box pre { color: #cc8888; font-size: 12px; overflow-x: auto; }
+.error-box .title { color: #ff6b6b; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
+.error-box pre { color: #cc8888; font-size: 11px; overflow-x: auto; }
 
-/* Responsive */
-@media (max-width: 600px) {
-  .header { padding: 16px 20px; }
-  .container { padding: 16px 12px; }
-  .form-card { padding: 20px; }
+/* ── Responsive ──────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header { padding: 12px 16px; }
+  .container { padding: 14px 10px; }
+  .form-card { padding: 18px; }
   .form-group { min-width: 100%; }
+  .usage-summary { gap: 12px; }
+  .user-chip span.user-email { display: none; }
 }
 </style>
 </head>
 <body>
 
+<!-- ── Header ──────────────────────────────────────── -->
 <div class="header">
-  <div>
+  <div class="header-left">
     <h1><span>Trading</span>Agents</h1>
-    <div class="subtitle">AI-Powered Multi-Agent Stock Analysis</div>
+    <div class="subtitle" id="txt-subtitle"></div>
   </div>
-  <a href="/api/auth/logout" style="color:#888; font-size:13px; text-decoration:none; padding:8px 16px; border:1px solid #333; border-radius:6px; transition: color 0.2s, border-color 0.2s;" onmouseover="this.style.color='#fff';this.style.borderColor='#4ecdc4'" onmouseout="this.style.color='#888';this.style.borderColor='#333'">退出</a>
+  <div class="header-right">
+    <div class="user-chip" id="user-chip" style="display:none">
+      <div class="user-avatar" id="user-avatar"></div>
+      <span id="user-name-display"></span>
+    </div>
+    <div class="lang-switch">
+      <button id="btn-zh" onclick="setLang('zh')">ZH</button>
+      <button id="btn-en" onclick="setLang('en')">EN</button>
+    </div>
+    <a href="/api/auth/logout" class="btn-header" id="txt-logout"></a>
+  </div>
 </div>
 
+<!-- ── Main container ─────────────────────────────── -->
 <div class="container">
+
+  <!-- Usage bar -->
+  <div class="usage-bar" id="usage-bar" style="display:none">
+    <div class="usage-summary">
+      <div class="usage-item" id="usage-analyses"></div>
+      <div class="usage-item" id="usage-tokens-in"></div>
+      <div class="usage-item" id="usage-tokens-out"></div>
+      <div class="usage-item" id="usage-llm-calls"></div>
+      <div class="usage-toggle" id="usage-toggle" onclick="toggleHistory()"></div>
+    </div>
+    <div class="usage-history" id="usage-history">
+      <table>
+        <thead><tr id="history-thead"></tr></thead>
+        <tbody id="history-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Form -->
   <div class="form-card">
     <div class="form-row">
-      <div class="form-group" style="flex:2; min-width:200px;">
-        <label>Stock Ticker</label>
+      <div class="form-group" style="flex:2;min-width:180px;">
+        <label id="lbl-ticker"></label>
         <input type="text" id="ticker" placeholder="e.g. NVDA, AAPL, TSLA" value="NVDA">
       </div>
       <div class="form-group">
-        <label>Date</label>
+        <label id="lbl-date"></label>
         <input type="date" id="trade-date">
       </div>
       <div class="form-group">
-        <label>Depth</label>
+        <label id="lbl-depth"></label>
         <select id="depth">
-          <option value="full">Full (all analysts)</option>
-          <option value="quick">Quick (news + sentiment)</option>
+          <option value="full" id="opt-full"></option>
+          <option value="quick" id="opt-quick"></option>
         </select>
       </div>
       <div class="form-group">
-        <label>LLM Provider</label>
+        <label id="lbl-provider"></label>
         <select id="llm-provider">
           <option value="google" selected>Google Gemini</option>
         </select>
       </div>
       <div class="form-group" style="flex:0 0 auto;">
         <label>&nbsp;</label>
-        <button class="btn-analyze" id="btn-analyze" onclick="startAnalysis()">Analyze</button>
+        <button class="btn-analyze" id="btn-analyze" onclick="startAnalysis()"></button>
       </div>
     </div>
   </div>
 
-  <div class="status-bar" id="status-bar">
-    <div class="spinner"></div>
-    <div class="status-text" id="status-text">Initializing...</div>
-    <div class="elapsed" id="elapsed"></div>
+  <!-- Progress panel -->
+  <div class="progress-panel" id="progress-panel">
+    <div class="progress-header">
+      <div class="progress-title" id="txt-progress"></div>
+      <div class="progress-elapsed" id="elapsed"></div>
+    </div>
+    <div class="timeline" id="timeline"></div>
   </div>
 
+  <!-- Error -->
   <div class="error-box" id="error-box">
-    <div class="title">Analysis Error</div>
+    <div class="title" id="txt-error-title"></div>
     <pre id="error-content"></pre>
   </div>
 
+  <!-- Decision banner -->
   <div class="decision-banner" id="decision-banner">
-    <div class="decision-label">Decision</div>
+    <div class="decision-label" id="txt-decision-label"></div>
     <div class="decision-value" id="decision-value"></div>
     <div class="decision-meta" id="decision-meta"></div>
   </div>
 
+  <!-- Token usage (after result) -->
+  <div class="token-bar" id="token-bar">
+    <div class="token-item" id="tok-in"></div>
+    <div class="token-item" id="tok-out"></div>
+    <div class="token-item" id="tok-llm"></div>
+    <div class="token-item" id="tok-tool"></div>
+    <div class="token-item" id="tok-time"></div>
+  </div>
+
+  <!-- Report -->
   <div class="report" id="report"></div>
 </div>
 
 <script>
-// Set default date to today
-document.getElementById('trade-date').value = new Date().toISOString().split('T')[0];
+/* ═══════════════════════════════════════════════════════
+   i18n
+   ═══════════════════════════════════════════════════════ */
+const I18N = {
+  zh: {
+    subtitle: 'AI 驱动的多智能体股票分析',
+    logout: '退出',
+    ticker: '股票代码', date: '日期', depth: '分析深度', provider: 'LLM 模型',
+    depthFull: '完整（全部分析师）', depthQuick: '快速（新闻+舆情）',
+    analyze: '开始分析', analyzing: '分析中...',
+    progress: '分析进度', decision: '交易决策',
+    errorTitle: '分析出错',
+    usageAnalyses: '分析次数', usageTokensIn: '输入 Token', usageTokensOut: '输出 Token',
+    usageLlmCalls: 'LLM 调用', usageToggle: '历史明细',
+    histDate: '日期', histTicker: '股票', histDecision: '决策',
+    histTokens: 'Token (入/出)', histTime: '耗时', histModel: '模型',
+    tokIn: '输入 Token', tokOut: '输出 Token', tokLlm: 'LLM 调用',
+    tokTool: '工具调用', tokTime: '耗时',
+  },
+  en: {
+    subtitle: 'AI-Powered Multi-Agent Stock Analysis',
+    logout: 'Logout',
+    ticker: 'Stock Ticker', date: 'Date', depth: 'Depth', provider: 'LLM Provider',
+    depthFull: 'Full (all analysts)', depthQuick: 'Quick (news + sentiment)',
+    analyze: 'Analyze', analyzing: 'Analyzing...',
+    progress: 'Analysis Progress', decision: 'Trade Decision',
+    errorTitle: 'Analysis Error',
+    usageAnalyses: 'Analyses', usageTokensIn: 'Input Tokens', usageTokensOut: 'Output Tokens',
+    usageLlmCalls: 'LLM Calls', usageToggle: 'History',
+    histDate: 'Date', histTicker: 'Ticker', histDecision: 'Decision',
+    histTokens: 'Tokens (In/Out)', histTime: 'Time', histModel: 'Model',
+    tokIn: 'Input Tokens', tokOut: 'Output Tokens', tokLlm: 'LLM Calls',
+    tokTool: 'Tool Calls', tokTime: 'Elapsed',
+  }
+};
 
+// Agent & stage name translations
+const NAMES = {
+  // stages
+  'analysts':    { zh: '数据分析', en: 'Data Analysis' },
+  'research':    { zh: '研究辩论', en: 'Research Debate' },
+  'trading':     { zh: '交易方案', en: 'Trading Plan' },
+  'risk':        { zh: '风险评估', en: 'Risk Assessment' },
+  'decision':    { zh: '最终决策', en: 'Final Decision' },
+  // agents
+  'Market Analyst':       { zh: '市场分析师', en: 'Market Analyst' },
+  'Social Analyst':       { zh: '舆情分析师', en: 'Social Analyst' },
+  'News Analyst':         { zh: '新闻分析师', en: 'News Analyst' },
+  'Fundamentals Analyst': { zh: '基本面分析师', en: 'Fundamentals Analyst' },
+  'Bull Researcher':      { zh: '多头研究员', en: 'Bull Researcher' },
+  'Bear Researcher':      { zh: '空头研究员', en: 'Bear Researcher' },
+  'Research Manager':     { zh: '研究主管', en: 'Research Manager' },
+  'Trader':               { zh: '交易员', en: 'Trader' },
+  'Aggressive Debater':   { zh: '激进派', en: 'Aggressive View' },
+  'Conservative Debater': { zh: '保守派', en: 'Conservative View' },
+  'Neutral Debater':      { zh: '中立派', en: 'Neutral View' },
+  'Risk Manager':         { zh: '风险主管', en: 'Risk Manager' },
+  'Portfolio Manager':    { zh: '投资组合经理', en: 'Portfolio Manager' },
+  // report section titles
+  'Analyst Reports':       { zh: '分析师报告', en: 'Analyst Reports' },
+  'Research Team':         { zh: '研究团队', en: 'Research Team' },
+  'Trading Plan':          { zh: '交易方案', en: 'Trading Plan' },
+  'Risk Assessment':       { zh: '风险评估', en: 'Risk Assessment' },
+  'Final Trade Decision':  { zh: '最终交易决策', en: 'Final Trade Decision' },
+  // report agent names
+  'Aggressive View':  { zh: '激进观点', en: 'Aggressive View' },
+  'Conservative View':{ zh: '保守观点', en: 'Conservative View' },
+  'Neutral View':     { zh: '中立观点', en: 'Neutral View' },
+};
+
+let lang = localStorage.getItem('ta_lang') || 'zh';
+function t(k) { return (I18N[lang] || I18N.zh)[k] || k; }
+function n(name) { return (NAMES[name] || {})[lang] || name; }
+
+function setLang(l) {
+  lang = l;
+  localStorage.setItem('ta_lang', l);
+  applyI18n();
+  // Re-render timeline if present
+  if (currentPipeline) renderTimeline(currentPipeline);
+}
+
+function applyI18n() {
+  document.getElementById('txt-subtitle').textContent = t('subtitle');
+  document.getElementById('txt-logout').textContent = t('logout');
+  document.getElementById('lbl-ticker').textContent = t('ticker');
+  document.getElementById('lbl-date').textContent = t('date');
+  document.getElementById('lbl-depth').textContent = t('depth');
+  document.getElementById('lbl-provider').textContent = t('provider');
+  document.getElementById('opt-full').textContent = t('depthFull');
+  document.getElementById('opt-quick').textContent = t('depthQuick');
+  document.getElementById('btn-analyze').textContent = analysisRunning ? t('analyzing') : t('analyze');
+  document.getElementById('txt-progress').textContent = t('progress');
+  document.getElementById('txt-error-title').textContent = t('errorTitle');
+  document.getElementById('txt-decision-label').textContent = t('decision');
+  document.getElementById('usage-toggle').textContent = t('usageToggle');
+  // lang buttons
+  document.getElementById('btn-zh').className = lang === 'zh' ? 'active' : '';
+  document.getElementById('btn-en').className = lang === 'en' ? 'active' : '';
+  // Refresh usage bar if data loaded
+  if (cachedUserInfo) renderUsageBar(cachedUserInfo.usage);
+}
+
+/* ═══════════════════════════════════════════════════════
+   User info & usage
+   ═══════════════════════════════════════════════════════ */
+let cachedUserInfo = null;
+
+async function fetchUserInfo() {
+  try {
+    const resp = await fetch('/api/user/info');
+    if (!resp.ok) return;
+    cachedUserInfo = await resp.json();
+    renderUserChip(cachedUserInfo);
+    renderUsageBar(cachedUserInfo.usage);
+  } catch (e) { /* ignore */ }
+}
+
+function renderUserChip(info) {
+  const chip = document.getElementById('user-chip');
+  const avatar = document.getElementById('user-avatar');
+  const nameEl = document.getElementById('user-name-display');
+
+  const displayName = info.name || info.email || 'User';
+  if (info.avatar) {
+    avatar.innerHTML = '<img src="' + escapeAttr(info.avatar) + '" alt="">';
+  } else {
+    avatar.textContent = displayName.charAt(0).toUpperCase();
+  }
+  let label = displayName;
+  if (info.email && info.email !== info.name) {
+    label += ' <span class="user-email" style="color:#666;font-size:11px;">' + escapeHtml(info.email) + '</span>';
+  }
+  nameEl.innerHTML = label;
+  chip.style.display = 'flex';
+}
+
+function renderUsageBar(usage) {
+  if (!usage) return;
+  const bar = document.getElementById('usage-bar');
+  bar.style.display = 'block';
+  document.getElementById('usage-analyses').innerHTML = '<b>' + usage.total_analyses + '</b> ' + t('usageAnalyses');
+  document.getElementById('usage-tokens-in').innerHTML = '<b>' + fmtNum(usage.total_tokens_in) + '</b> ' + t('usageTokensIn');
+  document.getElementById('usage-tokens-out').innerHTML = '<b>' + fmtNum(usage.total_tokens_out) + '</b> ' + t('usageTokensOut');
+  document.getElementById('usage-llm-calls').innerHTML = '<b>' + fmtNum(usage.total_llm_calls) + '</b> ' + t('usageLlmCalls');
+
+  // History table
+  const records = usage.records || [];
+  const thead = document.getElementById('history-thead');
+  thead.innerHTML = ['histDate','histTicker','histDecision','histTokens','histTime','histModel']
+    .map(k => '<th>' + t(k) + '</th>').join('');
+  const tbody = document.getElementById('history-tbody');
+  tbody.innerHTML = records.slice().reverse().map(r => {
+    const dec = (r.decision || '').replace(/[^A-Z]/g, '');
+    const d = dec.includes('BUY') ? 'BUY' : dec.includes('SELL') ? 'SELL' : 'HOLD';
+    const secs = Math.round((r.elapsed_ms || 0) / 1000);
+    return '<tr>'
+      + '<td>' + (r.trade_date || '') + '</td>'
+      + '<td>' + (r.ticker || '') + '</td>'
+      + '<td class="dec-' + d + '">' + d + '</td>'
+      + '<td>' + fmtNum(r.tokens_in) + ' / ' + fmtNum(r.tokens_out) + '</td>'
+      + '<td>' + secs + 's</td>'
+      + '<td>' + (r.model || '') + '</td>'
+      + '</tr>';
+  }).join('');
+}
+
+function toggleHistory() {
+  document.getElementById('usage-history').classList.toggle('open');
+}
+
+/* ═══════════════════════════════════════════════════════
+   Analysis progress timeline
+   ═══════════════════════════════════════════════════════ */
+let currentPipeline = null;    // stages array from server
+let completedAgents = new Set();
+let analysisRunning = false;
 let timer = null;
 
+function renderTimeline(stages) {
+  currentPipeline = stages;
+  const container = document.getElementById('timeline');
+  container.innerHTML = '';
+
+  for (const stage of stages) {
+    const stageEl = document.createElement('div');
+    stageEl.className = 'tl-stage';
+    stageEl.dataset.stage = stage.id;
+
+    // Determine stage status
+    const allDone = stage.agents.every(a => completedAgents.has(a));
+    const anyDone = stage.agents.some(a => completedAgents.has(a));
+    const cls = allDone ? 'done' : anyDone ? 'active' : '';
+
+    stageEl.innerHTML = '<div class="tl-stage-header ' + cls + '">' + n(stage.id) + '</div>';
+
+    for (const agent of stage.agents) {
+      const done = completedAgents.has(agent);
+      // Determine if this agent is the "next" one (first pending in an active stage)
+      let isActive = false;
+      if (!done && anyDone && !allDone) {
+        // First not-done agent in this stage
+        const firstPending = stage.agents.find(a => !completedAgents.has(a));
+        isActive = (firstPending === agent);
+      }
+      // Also mark the very first agent of the very first non-done stage as active if analysis is running
+      if (!done && !anyDone && analysisRunning) {
+        const firstPendingStage = stages.find(s => !s.agents.every(a => completedAgents.has(a)));
+        if (firstPendingStage === stage) {
+          const firstPending = stage.agents.find(a => !completedAgents.has(a));
+          isActive = (firstPending === agent);
+        }
+      }
+
+      const agentEl = document.createElement('div');
+      agentEl.className = 'tl-agent' + (done ? ' done' : isActive ? ' active' : '');
+      agentEl.dataset.agent = agent;
+
+      let icon;
+      if (done) icon = '<div class="tl-icon"><div class="tl-icon-done">&#10003;</div></div>';
+      else if (isActive) icon = '<div class="tl-icon"><div class="tl-icon-active"></div></div>';
+      else icon = '<div class="tl-icon"><div class="tl-icon-pending"></div></div>';
+
+      agentEl.innerHTML = icon + '<div><div class="tl-name">' + n(agent) + '</div>'
+        + (done && agentPreviews[agent] ? '<div class="tl-preview">' + escapeHtml(agentPreviews[agent]) + '</div>' : '')
+        + '</div>';
+      stageEl.appendChild(agentEl);
+    }
+    container.appendChild(stageEl);
+  }
+}
+
+let agentPreviews = {};
+
+function handleProgress(data) {
+  completedAgents.add(data.agent);
+  if (data.preview) agentPreviews[data.agent] = data.preview.substring(0, 120);
+  if (currentPipeline) renderTimeline(currentPipeline);
+}
+
+/* ═══════════════════════════════════════════════════════
+   Analysis
+   ═══════════════════════════════════════════════════════ */
 function startAnalysis() {
   const ticker = document.getElementById('ticker').value.trim().toUpperCase();
   if (!ticker) { alert('Please enter a stock ticker'); return; }
@@ -172,26 +495,32 @@ function startAnalysis() {
   const depth = document.getElementById('depth').value;
   const llmProvider = document.getElementById('llm-provider').value;
 
-  // Reset UI
+  // Reset
+  analysisRunning = true;
+  completedAgents = new Set();
+  agentPreviews = {};
+  currentPipeline = null;
   const btn = document.getElementById('btn-analyze');
   btn.disabled = true;
-  btn.textContent = 'Analyzing...';
-  document.getElementById('status-bar').className = 'status-bar active';
-  document.getElementById('status-text').textContent = 'Connecting...';
+  btn.textContent = t('analyzing');
+  document.getElementById('progress-panel').className = 'progress-panel active';
+  document.getElementById('timeline').innerHTML = '';
+  document.getElementById('elapsed').textContent = '';
   document.getElementById('decision-banner').className = 'decision-banner';
   document.getElementById('report').className = 'report';
   document.getElementById('report').innerHTML = '';
   document.getElementById('error-box').className = 'error-box';
+  document.getElementById('token-bar').className = 'token-bar';
 
   // Timer
   const startTime = Date.now();
   timer = setInterval(() => {
     const s = Math.floor((Date.now() - startTime) / 1000);
     const m = Math.floor(s / 60);
-    document.getElementById('elapsed').textContent = m > 0 ? `${m}m ${s%60}s` : `${s}s`;
+    document.getElementById('elapsed').textContent = m > 0 ? m + 'm ' + (s % 60) + 's' : s + 's';
   }, 1000);
 
-  // SSE request
+  // SSE
   fetch('/api/analyze', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -200,7 +529,6 @@ function startAnalysis() {
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
-
     function read() {
       reader.read().then(({ done, value }) => {
         if (done) { finish(); return; }
@@ -225,11 +553,18 @@ function startAnalysis() {
   });
 }
 
-function handleEvent(data, ticker, tradeDate) {
-  if (data.type === 'status') {
-    document.getElementById('status-text').textContent = data.message;
+function handleEvent(data) {
+  if (data.type === 'pipeline') {
+    renderTimeline(data.stages);
+  } else if (data.type === 'status') {
+    // status messages during init — no separate status bar needed, timeline covers it
+  } else if (data.type === 'progress') {
+    handleProgress(data);
   } else if (data.type === 'result') {
     renderReport(data.report, data.decision);
+    if (data.usage) renderTokenBar(data.usage);
+    // Refresh usage bar
+    fetchUserInfo();
   } else if (data.type === 'error') {
     showError(data.message, data.traceback || '');
   } else if (data.type === 'done') {
@@ -237,14 +572,26 @@ function handleEvent(data, ticker, tradeDate) {
   }
 }
 
+function renderTokenBar(usage) {
+  const bar = document.getElementById('token-bar');
+  bar.className = 'token-bar show';
+  document.getElementById('tok-in').innerHTML = t('tokIn') + ': <b>' + fmtNum(usage.tokens_in) + '</b>';
+  document.getElementById('tok-out').innerHTML = t('tokOut') + ': <b>' + fmtNum(usage.tokens_out) + '</b>';
+  document.getElementById('tok-llm').innerHTML = t('tokLlm') + ': <b>' + (usage.llm_calls || 0) + '</b>';
+  document.getElementById('tok-tool').innerHTML = t('tokTool') + ': <b>' + (usage.tool_calls || 0) + '</b>';
+  const secs = Math.round((usage.elapsed_ms || 0) / 1000);
+  const m = Math.floor(secs / 60);
+  document.getElementById('tok-time').innerHTML = t('tokTime') + ': <b>' + (m > 0 ? m + 'm ' + (secs % 60) + 's' : secs + 's') + '</b>';
+}
+
 function renderReport(report, decision) {
   // Decision banner
   const clean = (decision || '').replace(/[^A-Z]/g, '');
   const d = clean.includes('BUY') ? 'BUY' : clean.includes('SELL') ? 'SELL' : 'HOLD';
   const banner = document.getElementById('decision-banner');
-  banner.className = `decision-banner show ${d}`;
+  banner.className = 'decision-banner show ' + d;
   document.getElementById('decision-value').textContent = d;
-  document.getElementById('decision-meta').textContent = `${report.ticker} | ${report.date}`;
+  document.getElementById('decision-meta').textContent = report.ticker + ' | ' + report.date;
 
   // Sections
   const container = document.getElementById('report');
@@ -254,24 +601,23 @@ function renderReport(report, decision) {
   for (const section of report.sections) {
     const sec = document.createElement('div');
     sec.className = 'section';
-    sec.innerHTML = `
-      <div class="section-header" onclick="toggleSection(this)">
-        <div class="section-title">${section.title}</div>
-        <div class="section-arrow">&#9654;</div>
-      </div>
-      <div class="section-body">
-        ${section.items.map(item => `
-          <div class="item">
-            <div class="item-name">${item.name}</div>
-            <div class="item-content">${escapeHtml(item.content)}</div>
-          </div>
-        `).join('')}
-      </div>
-    `;
+    sec.innerHTML =
+      '<div class="section-header" onclick="toggleSection(this)">'
+      + '<div class="section-title">' + n(section.title) + '</div>'
+      + '<div class="section-arrow">&#9654;</div>'
+      + '</div>'
+      + '<div class="section-body">'
+      + section.items.map(item =>
+          '<div class="item">'
+          + '<div class="item-name">' + n(item.name) + '</div>'
+          + '<div class="item-content">' + escapeHtml(item.content) + '</div>'
+          + '</div>'
+        ).join('')
+      + '</div>';
     container.appendChild(sec);
   }
 
-  // Auto-expand first section
+  // Auto-expand first
   const first = container.querySelector('.section-header');
   if (first) toggleSection(first);
 }
@@ -288,17 +634,35 @@ function showError(msg, tb) {
 
 function finish() {
   clearInterval(timer);
-  document.getElementById('status-bar').className = 'status-bar';
+  analysisRunning = false;
+  // Keep progress panel visible so user can review the timeline
   const btn = document.getElementById('btn-analyze');
   btn.disabled = false;
-  btn.textContent = 'Analyze';
+  btn.textContent = t('analyze');
 }
 
+/* ═══════════════════════════════════════════════════════
+   Utilities
+   ═══════════════════════════════════════════════════════ */
 function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text || '';
   return div.innerHTML;
 }
+function escapeAttr(s) { return (s || '').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+function fmtNum(n) {
+  if (n == null) return '0';
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return String(n);
+}
+
+/* ═══════════════════════════════════════════════════════
+   Init
+   ═══════════════════════════════════════════════════════ */
+document.getElementById('trade-date').value = new Date().toISOString().split('T')[0];
+applyI18n();
+fetchUserInfo();
 </script>
 </body>
 </html>
