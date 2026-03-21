@@ -93,6 +93,11 @@ class Database:
             for user_id, records in data.items():
                 if not isinstance(records, list):
                     continue
+                # Ensure user exists before inserting records
+                conn.execute(
+                    "INSERT OR IGNORE INTO trading_users (user_id) VALUES (?)",
+                    (user_id,),
+                )
                 for r in records:
                     conn.execute(
                         """INSERT INTO trading_analysis_records
