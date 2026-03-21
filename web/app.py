@@ -75,6 +75,12 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
 
 SKILLS_DIR = PROJECT_ROOT
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s %(name)s: %(message)s",
+    stream=sys.stderr,
+    force=True,
+)
 log = logging.getLogger("tradingagents.web")
 
 # ---------------------------------------------------------------------------
@@ -301,21 +307,31 @@ async def auth_callback(request: Request, code: str = "", state: str = ""):
                 AGENTPIT_USERINFO_URL,
                 headers={"Authorization": f"Bearer {access_token}"},
             )
+            print(f"[USERINFO] callback fetch: status={resp.status_code} body={resp.text[:500]}", flush=True)
             if resp.status_code == 200:
                 info = resp.json()
+                # Try common field names
                 request.session["user_name"] = (
-                    info.get("name") or info.get("username") or info.get("login", "")
+                    info.get("name") or info.get("username") or info.get("login")
+                    or info.get("displayName") or info.get("nickname") or ""
                 )
-                request.session["user_email"] = info.get("email", "")
+                request.session["user_email"] = (
+                    info.get("email") or info.get("mail") or ""
+                )
                 request.session["user_avatar"] = (
-                    info.get("avatar") or info.get("picture", "")
+                    info.get("avatar") or info.get("picture")
+                    or info.get("avatarUrl") or info.get("avatar_url") or ""
                 )
                 request.session["user_id"] = str(
-                    info.get("id") or info.get("sub") or access_token[:16]
+                    info.get("id") or info.get("sub")
+                    or info.get("userId") or info.get("user_id")
+                    or access_token[:16]
                 )
+            else:
+                log.warning("userinfo returned %s", resp.status_code)
     except Exception as e:
         log.warning("userinfo fetch failed: %s", e)
-        request.session.setdefault("user_id", access_token[:16])
+    request.session.setdefault("user_id", access_token[:16])
 
     return RedirectResponse(url="/", status_code=302)
 
@@ -332,6 +348,38 @@ async def auth_logout(request: Request):
 
 @app.get("/api/user/info")
 async def user_info(request: Request, _auth=Depends(require_auth)):
+    # If session lacks user profile, try fetching it now (handles old sessions)
+    if not request.session.get("user_name") and not request.session.get("user_email"):
+        access_token = request.session.get("access_token", "")
+        if access_token:
+            try:
+                async with httpx.AsyncClient(timeout=10) as client:
+                    resp = await client.get(
+                        AGENTPIT_USERINFO_URL,
+                        headers={"Authorization": f"Bearer {access_token}"},
+                    )
+                    print(f"[USERINFO] lazy fetch: status={resp.status_code} body={resp.text[:500]}", flush=True)
+                    if resp.status_code == 200:
+                        info = resp.json()
+                        request.session["user_name"] = (
+                            info.get("name") or info.get("username") or info.get("login")
+                            or info.get("displayName") or info.get("nickname") or ""
+                        )
+                        request.session["user_email"] = (
+                            info.get("email") or info.get("mail") or ""
+                        )
+                        request.session["user_avatar"] = (
+                            info.get("avatar") or info.get("picture")
+                            or info.get("avatarUrl") or info.get("avatar_url") or ""
+                        )
+                        request.session["user_id"] = str(
+                            info.get("id") or info.get("sub")
+                            or info.get("userId") or info.get("user_id")
+                            or access_token[:16]
+                        )
+            except Exception as e:
+                log.warning("userinfo lazy fetch failed: %s", e)
+
     user_id = request.session.get("user_id", "")
     records = _usage_store.get(user_id, [])
 
