@@ -3,7 +3,10 @@ import time
 import json
 
 
-def create_bear_researcher(llm, memory):
+def create_bear_researcher(llm, memory, config=None):
+    from tradingagents.agents.utils.language import get_language_suffix
+    lang_suffix = get_language_suffix(config or {})
+
     def bear_node(state) -> dict:
         investment_debate_state = state["investment_debate_state"]
         history = investment_debate_state.get("history", "")
@@ -42,7 +45,7 @@ Conversation history of the debate: {history}
 Last bull argument: {current_response}
 Reflections from similar situations and lessons learned: {past_memory_str}
 Use this information to deliver a compelling bear argument, refute the bull's claims, and engage in a dynamic debate that demonstrates the risks and weaknesses of investing in the stock. You must also address reflections and learn from lessons and mistakes you made in the past.
-"""
+""" + lang_suffix
 
         response = llm.invoke(prompt)
 

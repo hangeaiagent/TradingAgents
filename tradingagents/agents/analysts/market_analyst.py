@@ -5,7 +5,9 @@ from tradingagents.agents.utils.agent_utils import get_stock_data, get_indicator
 from tradingagents.dataflows.config import get_config
 
 
-def create_market_analyst(llm):
+def create_market_analyst(llm, config=None):
+    from tradingagents.agents.utils.language import get_language_suffix
+    lang_suffix = get_language_suffix(config or {})
 
     def market_analyst_node(state):
         current_date = state["trade_date"]
@@ -57,13 +59,15 @@ Volume-Based Indicators:
                     " If you or any other assistant has the FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL** or deliverable,"
                     " prefix your response with FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL** so the team knows to stop."
                     " You have access to the following tools: {tool_names}.\n{system_message}"
-                    "For your reference, the current date is {current_date}. The company we want to look at is {ticker}",
+                    "For your reference, the current date is {current_date}. The company we want to look at is {ticker}"
+                    "{lang_suffix}",
                 ),
                 MessagesPlaceholder(variable_name="messages"),
             ]
         )
 
         prompt = prompt.partial(system_message=system_message)
+        prompt = prompt.partial(lang_suffix=lang_suffix)
         prompt = prompt.partial(tool_names=", ".join([tool.name for tool in tools]))
         prompt = prompt.partial(current_date=current_date)
         prompt = prompt.partial(ticker=ticker)

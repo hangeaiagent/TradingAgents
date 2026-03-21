@@ -254,7 +254,7 @@ function renderList() {
     const secs = Math.round((item.elapsed_ms || 0) / 1000);
     const tokTotal = (item.tokens_in || 0) + (item.tokens_out || 0);
     return '<div class="history-card">'
-      + '<div class="history-row" onclick="' + (item.has_report ? 'openDetail(' + item.index + ')' : '') + '">'
+      + '<div class="history-row" onclick="' + (item.has_report ? 'openDetail(' + item.id + ')' : '') + '">'
       + '<span class="h-ticker">' + esc(item.ticker) + '</span>'
       + '<span class="h-decision ' + d + '">' + d + '</span>'
       + '<span class="h-date">' + (item.trade_date || '') + '</span>'

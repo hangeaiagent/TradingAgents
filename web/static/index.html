@@ -601,7 +601,7 @@ function startAnalysis() {
   fetch('/api/analyze', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ticker, trade_date: tradeDate, depth, llm_provider: llmProvider })
+    body: JSON.stringify({ ticker, trade_date: tradeDate, depth, llm_provider: llmProvider, language: lang })
   }).then(response => {
     const reader = response.body.getReader();
     const decoder = new TextDecoder();

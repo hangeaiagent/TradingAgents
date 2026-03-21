@@ -31,4 +31,6 @@ DEFAULT_CONFIG = {
     "tool_vendors": {
         # Example: "get_stock_data": "alpha_vantage",  # Override category default
     },
+    # Language for agent output: None = English, "zh" = Chinese
+    "output_language": None,
 }

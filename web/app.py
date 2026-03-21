@@ -11,8 +11,7 @@ import time
 import queue
 import threading
 import concurrent.futures
-from collections import defaultdict
-from datetime import date, datetime
+from datetime import date
 from pathlib import Path
 from urllib.parse import urlencode
 from typing import Optional
@@ -84,33 +83,10 @@ logging.basicConfig(
 log = logging.getLogger("tradingagents.web")
 
 # ---------------------------------------------------------------------------
-# In-memory usage store (persisted to disk)
+# SQLite database
 # ---------------------------------------------------------------------------
-USAGE_FILE = PROJECT_ROOT / "data" / "web_usage.json"
-_usage_lock = threading.Lock()
-
-
-def _load_usage_store() -> dict:
-    if USAGE_FILE.exists():
-        try:
-            with open(USAGE_FILE, encoding="utf-8") as f:
-                return defaultdict(list, json.load(f))
-        except Exception:
-            pass
-    return defaultdict(list)
-
-
-_usage_store: dict = _load_usage_store()
-
-
-def _save_usage_store():
-    with _usage_lock:
-        try:
-            USAGE_FILE.parent.mkdir(parents=True, exist_ok=True)
-            with open(USAGE_FILE, "w", encoding="utf-8") as f:
-                json.dump(dict(_usage_store), f, ensure_ascii=False, indent=2)
-        except Exception as e:
-            log.warning("Failed to save usage store: %s", e)
+from web.database import Database
+db = Database()
 
 
 # ---------------------------------------------------------------------------
@@ -166,6 +142,7 @@ class AnalysisRequest(BaseModel):
     depth: str = "full"
     llm_provider: str = "google"
     model: Optional[str] = None
+    language: Optional[str] = None
 
 
 def build_config(req: AnalysisRequest):
@@ -187,6 +164,7 @@ def build_config(req: AnalysisRequest):
         # so we don't need a native GOOGLE_API_KEY.
         config["llm_provider"] = "openai"
 
+    config["output_language"] = req.language or "zh"
     return config
 
 
@@ -335,6 +313,13 @@ async def auth_callback(request: Request, code: str = "", state: str = ""):
                     or info.get("userId") or info.get("user_id")
                     or access_token[:16]
                 )
+                # Persist user to DB
+                db.upsert_user(
+                    request.session["user_id"],
+                    request.session["user_name"],
+                    request.session["user_email"],
+                    request.session["user_avatar"],
+                )
             else:
                 log.warning("userinfo returned %s", resp.status_code)
     except Exception as e:
@@ -385,47 +370,24 @@ async def user_info(request: Request, _auth=Depends(require_auth)):
                             or info.get("userId") or info.get("user_id")
                             or access_token[:16]
                         )
+                        # Persist user to DB on lazy fetch too
+                        db.upsert_user(
+                            request.session["user_id"],
+                            request.session["user_name"],
+                            request.session["user_email"],
+                            request.session["user_avatar"],
+                        )
             except Exception as e:
                 log.warning("userinfo lazy fetch failed: %s", e)
 
     user_id = request.session.get("user_id", "")
-    records = _usage_store.get(user_id, [])
-
-    # Monthly aggregation
-    monthly: dict = {}
-    for r in records:
-        ts = r.get("timestamp", "")
-        month_key = ts[:7] if len(ts) >= 7 else "unknown"  # "2026-03"
-        if month_key not in monthly:
-            monthly[month_key] = {
-                "month": month_key, "analyses": 0,
-                "tokens_in": 0, "tokens_out": 0,
-                "llm_calls": 0, "tool_calls": 0, "total_time_ms": 0,
-            }
-        m = monthly[month_key]
-        m["analyses"] += 1
-        m["tokens_in"] += r.get("tokens_in", 0)
-        m["tokens_out"] += r.get("tokens_out", 0)
-        m["llm_calls"] += r.get("llm_calls", 0)
-        m["tool_calls"] += r.get("tool_calls", 0)
-        m["total_time_ms"] += r.get("elapsed_ms", 0)
-
-    # Sort months descending
-    monthly_list = sorted(monthly.values(), key=lambda x: x["month"], reverse=True)
+    usage = db.get_usage_summary(user_id)
 
     return {
         "name": request.session.get("user_name", ""),
         "email": request.session.get("user_email", ""),
         "avatar": request.session.get("user_avatar", ""),
-        "usage": {
-            "total_analyses": len(records),
-            "total_tokens_in": sum(r.get("tokens_in", 0) for r in records),
-            "total_tokens_out": sum(r.get("tokens_out", 0) for r in records),
-            "total_llm_calls": sum(r.get("llm_calls", 0) for r in records),
-            "total_time_ms": sum(r.get("elapsed_ms", 0) for r in records),
-            "monthly": monthly_list,
-            "records": records[-50:],  # last 50
-        },
+        "usage": usage,
     }
 
 
@@ -435,37 +397,20 @@ async def user_info(request: Request, _auth=Depends(require_auth)):
 
 @app.get("/api/history")
 async def get_history(request: Request, _auth=Depends(require_auth)):
-    """Return analysis history with full reports (without report body in list)."""
+    """Return analysis history (without report body in list)."""
     user_id = request.session.get("user_id", "")
-    records = _usage_store.get(user_id, [])
-    # Return list without heavy report field
-    items = []
-    for i, r in enumerate(records):
-        items.append({
-            "index": i,
-            "ticker": r.get("ticker", ""),
-            "trade_date": r.get("trade_date", ""),
-            "decision": r.get("decision", ""),
-            "tokens_in": r.get("tokens_in", 0),
-            "tokens_out": r.get("tokens_out", 0),
-            "llm_calls": r.get("llm_calls", 0),
-            "elapsed_ms": r.get("elapsed_ms", 0),
-            "model": r.get("model", ""),
-            "timestamp": r.get("timestamp", ""),
-            "has_report": r.get("report") is not None,
-        })
-    items.reverse()  # newest first
+    items = db.get_history(user_id)
     return {"items": items}
 
 
-@app.get("/api/history/{idx}")
-async def get_history_detail(idx: int, request: Request, _auth=Depends(require_auth)):
+@app.get("/api/history/{record_id}")
+async def get_history_detail(record_id: int, request: Request, _auth=Depends(require_auth)):
     """Return a single history record with full report."""
     user_id = request.session.get("user_id", "")
-    records = _usage_store.get(user_id, [])
-    if idx < 0 or idx >= len(records):
+    record = db.get_record(record_id, user_id)
+    if not record:
         return JSONResponse({"error": "not found"}, status_code=404)
-    return records[idx]
+    return record
 
 
 # ---------------------------------------------------------------------------
@@ -661,22 +606,19 @@ def _detect_progress(state: dict, seen: set, q: queue.Queue):
 def _record_usage(request, ticker, trade_date, decision, stats, elapsed_ms, model_name,
                    report=None):
     user_id = request.session.get("user_id", "")
-    record = {
-        "ticker": ticker,
-        "trade_date": trade_date,
-        "decision": decision,
-        "tokens_in": stats.get("tokens_in", 0),
-        "tokens_out": stats.get("tokens_out", 0),
-        "llm_calls": stats.get("llm_calls", 0),
-        "tool_calls": stats.get("tool_calls", 0),
-        "elapsed_ms": elapsed_ms,
-        "model": model_name,
-        "report": report,
-        "timestamp": datetime.now().isoformat(),
-    }
-    _usage_store[user_id].append(record)
-    _save_usage_store()
-    return record
+    return db.record_analysis(
+        user_id=user_id,
+        ticker=ticker,
+        trade_date=trade_date,
+        decision=decision,
+        tokens_in=stats.get("tokens_in", 0),
+        tokens_out=stats.get("tokens_out", 0),
+        llm_calls=stats.get("llm_calls", 0),
+        tool_calls=stats.get("tool_calls", 0),
+        elapsed_ms=elapsed_ms,
+        model=model_name,
+        report=report,
+    )
 
 
 # ---------------------------------------------------------------------------
