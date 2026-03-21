@@ -114,7 +114,7 @@ class AnalysisRequest(BaseModel):
     ticker: str
     trade_date: Optional[str] = None
     depth: str = "full"  # full or quick
-    llm_provider: str = "openai"
+    llm_provider: str = "google"
     model: Optional[str] = None
 
 
@@ -132,6 +132,10 @@ def build_config(req: AnalysisRequest):
 
     if os.environ.get("ONE_API_BASE_URL"):
         config["backend_url"] = os.environ["ONE_API_BASE_URL"]
+        # One-API provides an OpenAI-compatible endpoint that proxies to
+        # upstream models (e.g. Gemini).  Route through the OpenAI client
+        # so we don't need a native GOOGLE_API_KEY.
+        config["llm_provider"] = "openai"
 
     return config
 
