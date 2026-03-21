@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TradingAgents - AI Stock Analysis</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
 :root {
   --bg: #0f1117; --card: #1a1a2e; --border: #2a2a4a;
@@ -121,7 +122,37 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .item { padding: 18px 22px; border-bottom: 1px solid #1f1f3a; }
 .item:last-child { border-bottom: none; }
 .item-name { font-size: 12px; font-weight: 600; color: var(--accent); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .5px; }
-.item-content { font-size: 13px; line-height: 1.7; color: #ccc; white-space: pre-wrap; word-wrap: break-word; }
+.item-content { font-size: 14px; line-height: 1.75; color: #ccc; word-wrap: break-word; }
+.item-content h1 { font-size: 20px; color: #fff; margin: 20px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.item-content h2 { font-size: 17px; color: #fff; margin: 18px 0 8px; }
+.item-content h3 { font-size: 15px; color: #ddd; margin: 14px 0 6px; }
+.item-content h4, .item-content h5, .item-content h6 { font-size: 14px; color: #ccc; margin: 12px 0 6px; }
+.item-content p { margin: 8px 0; }
+.item-content strong, .item-content b { color: #fff; }
+.item-content em { color: #bbb; font-style: italic; }
+.item-content ul, .item-content ol { margin: 8px 0; padding-left: 24px; }
+.item-content li { margin: 4px 0; }
+.item-content li::marker { color: var(--accent); }
+.item-content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 10px 0; background: rgba(78,205,196,0.04); color: #aaa; }
+.item-content code { background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; font-family: 'SF Mono', Menlo, monospace; font-size: 12px; color: #e0b0ff; }
+.item-content pre { background: #0d0d1a; border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin: 10px 0; overflow-x: auto; }
+.item-content pre code { background: none; padding: 0; font-size: 12px; color: #ccc; }
+.item-content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.item-content th { background: #222; color: var(--accent); padding: 8px 12px; border: 1px solid var(--border); text-align: left; font-weight: 500; }
+.item-content td { padding: 7px 12px; border: 1px solid var(--border); color: #bbb; }
+.item-content tr:hover td { background: rgba(78,205,196,0.03); }
+.item-content hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+.item-content a { color: var(--accent); text-decoration: underline; }
+
+/* ── Download bar ──────────────────────────────────────── */
+.download-bar { display: none; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 22px; margin-bottom: 20px; }
+.download-bar.show { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.download-bar .dl-label { font-size: 13px; color: var(--muted); }
+.btn-download {
+  padding: 6px 16px; background: transparent; border: 1px solid var(--border); border-radius: 6px;
+  color: var(--accent); font-size: 12px; font-weight: 500; cursor: pointer; transition: .2s; text-decoration: none;
+}
+.btn-download:hover { background: rgba(78,205,196,0.1); border-color: var(--accent); }
 
 /* ── Error ───────────────────────────────────────────── */
 .error-box { display: none; background: #2a0f0f; border: 1px solid var(--red); border-radius: 12px; padding: 18px 24px; margin-bottom: 20px; }
@@ -243,6 +274,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
     <div class="token-item" id="tok-time"></div>
   </div>
 
+  <!-- Download bar -->
+  <div class="download-bar" id="download-bar">
+    <span class="dl-label" id="txt-download"></span>
+    <a class="btn-download" onclick="downloadMd()" id="btn-dl-md"></a>
+    <a class="btn-download" onclick="downloadPdf()" id="btn-dl-pdf"></a>
+  </div>
+
   <!-- Report -->
   <div class="report" id="report"></div>
 </div>
@@ -266,6 +304,7 @@ const I18N = {
     histTokens: 'Token (入/出)', histTime: '耗时', histModel: '模型',
     tokIn: '输入 Token', tokOut: '输出 Token', tokLlm: 'LLM 调用',
     tokTool: '工具调用', tokTime: '耗时',
+    download: '下载报告', dlMd: '下载 Markdown', dlPdf: '下载 PDF',
   },
   en: {
     subtitle: 'AI-Powered Multi-Agent Stock Analysis',
@@ -281,6 +320,7 @@ const I18N = {
     histTokens: 'Tokens (In/Out)', histTime: 'Time', histModel: 'Model',
     tokIn: 'Input Tokens', tokOut: 'Output Tokens', tokLlm: 'LLM Calls',
     tokTool: 'Tool Calls', tokTime: 'Elapsed',
+    download: 'Download Report', dlMd: 'Markdown (.md)', dlPdf: 'PDF (.pdf)',
   }
 };
 
@@ -344,6 +384,9 @@ function applyI18n() {
   document.getElementById('txt-error-title').textContent = t('errorTitle');
   document.getElementById('txt-decision-label').textContent = t('decision');
   document.getElementById('usage-toggle').textContent = t('usageToggle');
+  document.getElementById('txt-download').textContent = t('download');
+  document.getElementById('btn-dl-md').textContent = t('dlMd');
+  document.getElementById('btn-dl-pdf').textContent = t('dlPdf');
   // lang buttons
   document.getElementById('btn-zh').className = lang === 'zh' ? 'active' : '';
   document.getElementById('btn-en').className = lang === 'en' ? 'active' : '';
@@ -517,6 +560,7 @@ function startAnalysis() {
   document.getElementById('report').innerHTML = '';
   document.getElementById('error-box').className = 'error-box';
   document.getElementById('token-bar').className = 'token-bar';
+  document.getElementById('download-bar').className = 'download-bar';
 
   // Timer
   const startTime = Date.now();
@@ -590,7 +634,19 @@ function renderTokenBar(usage) {
   document.getElementById('tok-time').innerHTML = t('tokTime') + ': <b>' + (m > 0 ? m + 'm ' + (secs % 60) + 's' : secs + 's') + '</b>';
 }
 
+let lastReport = null;  // store for download
+
+function renderMarkdown(text) {
+  if (typeof marked !== 'undefined' && marked.parse) {
+    try { return marked.parse(text || ''); } catch(e) {}
+  }
+  // Fallback: basic formatting if marked.js not loaded
+  return escapeHtml(text).replace(/\n/g, '<br>');
+}
+
 function renderReport(report, decision) {
+  lastReport = report;
+
   // Decision banner
   const clean = (decision || '').replace(/[^A-Z]/g, '');
   const d = clean.includes('BUY') ? 'BUY' : clean.includes('SELL') ? 'SELL' : 'HOLD';
@@ -598,6 +654,9 @@ function renderReport(report, decision) {
   banner.className = 'decision-banner show ' + d;
   document.getElementById('decision-value').textContent = d;
   document.getElementById('decision-meta').textContent = report.ticker + ' | ' + report.date;
+
+  // Show download bar
+  document.getElementById('download-bar').className = 'download-bar show';
 
   // Sections
   const container = document.getElementById('report');
@@ -616,7 +675,7 @@ function renderReport(report, decision) {
       + section.items.map(item =>
           '<div class="item">'
           + '<div class="item-name">' + n(item.name) + '</div>'
-          + '<div class="item-content">' + escapeHtml(item.content) + '</div>'
+          + '<div class="item-content">' + renderMarkdown(item.content) + '</div>'
           + '</div>'
         ).join('')
       + '</div>';
@@ -626,6 +685,84 @@ function renderReport(report, decision) {
   // Auto-expand first
   const first = container.querySelector('.section-header');
   if (first) toggleSection(first);
+}
+
+/* ═══════════════════════════════════════════════════════
+   Download
+   ═══════════════════════════════════════════════════════ */
+function buildMarkdownText() {
+  if (!lastReport) return '';
+  const r = lastReport;
+  let md = '# ' + r.ticker + ' Analysis Report (' + r.date + ')\n\n';
+  md += '**Decision: ' + (r.decision || '').toUpperCase() + '**\n\n---\n\n';
+  for (const section of r.sections) {
+    md += '## ' + section.title + '\n\n';
+    for (const item of section.items) {
+      md += '### ' + item.name + '\n\n';
+      md += (item.content || '') + '\n\n';
+    }
+  }
+  return md;
+}
+
+function downloadMd() {
+  const md = buildMarkdownText();
+  if (!md) return;
+  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = lastReport.ticker + '_' + lastReport.date + '_report.md';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadPdf() {
+  if (!lastReport) return;
+  // Build a clean HTML document for print-to-PDF
+  const r = lastReport;
+  const dec = (r.decision || '').replace(/[^A-Z]/g, '');
+  const d = dec.includes('BUY') ? 'BUY' : dec.includes('SELL') ? 'SELL' : 'HOLD';
+  const decColor = d === 'BUY' ? '#2d8a6e' : d === 'SELL' ? '#d44' : '#b8a020';
+
+  let html = '';
+  for (const section of r.sections) {
+    html += '<h2 style="color:#333;border-bottom:1px solid #ddd;padding-bottom:4px;margin-top:24px">' + escapeHtml(section.title) + '</h2>';
+    for (const item of section.items) {
+      html += '<h3 style="color:#555;margin:14px 0 6px">' + escapeHtml(item.name) + '</h3>';
+      html += '<div style="font-size:13px;line-height:1.8;color:#333">' + renderMarkdown(item.content) + '</div>';
+    }
+  }
+
+  const win = window.open('', '_blank');
+  if (!win) { alert('Please allow popups for PDF download'); return; }
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8">'
+    + '<title>' + r.ticker + ' Report</title>'
+    + '<style>'
+    + 'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;max-width:800px;margin:0 auto;padding:32px 24px;color:#333;font-size:14px;line-height:1.7}'
+    + 'h1{font-size:22px;margin-bottom:4px}'
+    + 'h2{font-size:17px}'
+    + 'h3{font-size:14px}'
+    + 'table{width:100%;border-collapse:collapse;margin:10px 0;font-size:12px}'
+    + 'th,td{border:1px solid #ddd;padding:6px 10px;text-align:left}'
+    + 'th{background:#f5f5f5}'
+    + 'blockquote{border-left:3px solid #4ecdc4;padding:6px 14px;margin:8px 0;color:#666}'
+    + 'code{background:#f0f0f0;padding:1px 5px;border-radius:3px;font-size:12px}'
+    + 'pre{background:#f8f8f8;border:1px solid #e0e0e0;border-radius:6px;padding:12px;overflow-x:auto}'
+    + 'pre code{background:none;padding:0}'
+    + 'ul,ol{padding-left:22px}'
+    + 'hr{border:none;border-top:1px solid #ddd;margin:16px 0}'
+    + '@media print{body{padding:0}}'
+    + '</style></head><body>'
+    + '<h1>' + escapeHtml(r.ticker) + ' Analysis Report</h1>'
+    + '<p style="color:#888;margin-bottom:4px">' + r.date + '</p>'
+    + '<div style="display:inline-block;background:' + decColor + ';color:#fff;padding:4px 18px;border-radius:6px;font-size:18px;font-weight:700;margin:10px 0 20px">' + d + '</div>'
+    + html
+    + '<hr><p style="color:#aaa;font-size:11px;margin-top:20px">Generated by TradingAgents | trading.agentpit.io</p>'
+    + '</body></html>');
+  win.document.close();
+  // Give browser a moment to render, then trigger print dialog
+  setTimeout(() => { win.print(); }, 600);
 }
 
 function toggleSection(header) {
