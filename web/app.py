@@ -5,7 +5,9 @@ import sys
 import json
 import asyncio
 import secrets
+import logging
 import traceback
+import time
 from datetime import date
 from pathlib import Path
 from urllib.parse import urlencode
@@ -40,6 +42,10 @@ AGENTPIT_REDIRECT_URI = os.environ.get("AGENTPIT_REDIRECT_URI", "https://trading
 AGENTPIT_AUTHORIZE_URL = "https://agentpit.io/api/oauth/authorize"
 AGENTPIT_TOKEN_URL = "https://agentpit.io/api/oauth/token"
 AGENTPIT_USERINFO_URL = "https://agentpit.io/api/oauth/userinfo"
+AGENTPIT_REPORT_USAGE_URL = os.environ.get(
+    "AGENTPIT_REPORT_USAGE_URL", "https://agentpit.io/api/v1/partner/report-usage"
+)
+AGENTPIT_AGENT_ID = os.environ.get("AGENTPIT_AGENT_ID", "")
 
 SESSION_SECRET_KEY = os.environ.get("SESSION_SECRET_KEY", secrets.token_hex(32))
 
@@ -65,6 +71,43 @@ async def require_auth(request: Request):
     if not request.session.get("access_token"):
         from fastapi import HTTPException
         raise HTTPException(status_code=401, detail="Unauthorized — please login via AgentPit")
+
+
+log = logging.getLogger("tradingagents.web")
+
+
+async def report_usage_to_agentpit(
+    access_token: str,
+    stats: dict,
+    model_name: str,
+    request_path: str,
+    response_time_ms: int,
+    response_status: int = 200,
+):
+    """Report token usage to AgentPit so it appears on the developer dashboard."""
+    if not AGENTPIT_REPORT_USAGE_URL or not AGENTPIT_CLIENT_ID:
+        return
+    try:
+        payload = {
+            "client_id": AGENTPIT_CLIENT_ID,
+            "client_secret": AGENTPIT_CLIENT_SECRET,
+            "access_token": access_token,
+            "agent_id": AGENTPIT_AGENT_ID or None,
+            "input_tokens": stats.get("tokens_in", 0),
+            "output_tokens": stats.get("tokens_out", 0),
+            "model_name": model_name,
+            "request_path": request_path,
+            "response_time_ms": response_time_ms,
+            "response_status": response_status,
+        }
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.post(AGENTPIT_REPORT_USAGE_URL, json=payload)
+            if resp.status_code != 200:
+                log.warning("AgentPit usage report failed: %s %s", resp.status_code, resp.text)
+            else:
+                log.info("AgentPit usage reported: %s", resp.json())
+    except Exception as e:
+        log.warning("AgentPit usage report error: %s", e)
 
 
 class AnalysisRequest(BaseModel):
@@ -177,19 +220,24 @@ async def get_skill(skill_name: str):
 
 
 @app.post("/api/analyze/sync")
-async def analyze_sync(req: AnalysisRequest, _auth=Depends(require_auth)):
+async def analyze_sync(req: AnalysisRequest, request: Request, _auth=Depends(require_auth)):
     """Synchronous analysis endpoint — returns full JSON result (for curl/OpenClaw)."""
     trade_date = req.trade_date or date.today().strftime("%Y-%m-%d")
+    t0 = time.time()
 
     try:
         config = build_config(req)
         analysts = get_analysts(req.depth)
 
         from tradingagents.graph.trading_graph import TradingAgentsGraph
+        from cli.stats_handler import StatsCallbackHandler
+
+        stats_cb = StatsCallbackHandler()
 
         def run_analysis():
             ta = TradingAgentsGraph(
-                selected_analysts=analysts, debug=False, config=config
+                selected_analysts=analysts, debug=False, config=config,
+                callbacks=[stats_cb],
             )
             return ta.propagate(req.ticker, trade_date)
 
@@ -197,6 +245,15 @@ async def analyze_sync(req: AnalysisRequest, _auth=Depends(require_auth)):
         final_state, decision = await loop.run_in_executor(None, run_analysis)
 
         report = build_report(final_state, decision, req.ticker, trade_date)
+
+        elapsed_ms = int((time.time() - t0) * 1000)
+        access_token = request.session.get("access_token", "")
+        model_name = req.model or config.get("deep_think_llm", "")
+        asyncio.ensure_future(report_usage_to_agentpit(
+            access_token, stats_cb.get_stats(), model_name,
+            "/api/analyze/sync", elapsed_ms, 200,
+        ))
+
         return {"status": "ok", "report": report, "decision": decision}
 
     except Exception as e:
@@ -204,12 +261,14 @@ async def analyze_sync(req: AnalysisRequest, _auth=Depends(require_auth)):
 
 
 @app.post("/api/analyze")
-async def analyze(req: AnalysisRequest, _auth=Depends(require_auth)):
+async def analyze(req: AnalysisRequest, request: Request, _auth=Depends(require_auth)):
     """Run analysis and stream results via SSE."""
     trade_date = req.trade_date or date.today().strftime("%Y-%m-%d")
+    access_token = request.session.get("access_token", "")
 
     async def event_stream():
         yield f"data: {json.dumps({'type': 'status', 'message': f'Initializing analysis for {req.ticker}...'})}\n\n"
+        t0 = time.time()
 
         try:
             config = build_config(req)
@@ -219,10 +278,14 @@ async def analyze(req: AnalysisRequest, _auth=Depends(require_auth)):
 
             # Run in thread to not block event loop
             from tradingagents.graph.trading_graph import TradingAgentsGraph
+            from cli.stats_handler import StatsCallbackHandler
+
+            stats_cb = StatsCallbackHandler()
 
             def run_analysis():
                 ta = TradingAgentsGraph(
-                    selected_analysts=analysts, debug=False, config=config
+                    selected_analysts=analysts, debug=False, config=config,
+                    callbacks=[stats_cb],
                 )
                 return ta.propagate(req.ticker, trade_date)
 
@@ -234,6 +297,13 @@ async def analyze(req: AnalysisRequest, _auth=Depends(require_auth)):
 
             yield f"data: {json.dumps({'type': 'result', 'report': report, 'decision': decision})}\n\n"
             yield f"data: {json.dumps({'type': 'done'})}\n\n"
+
+            elapsed_ms = int((time.time() - t0) * 1000)
+            model_name = req.model or config.get("deep_think_llm", "")
+            await report_usage_to_agentpit(
+                access_token, stats_cb.get_stats(), model_name,
+                "/api/analyze", elapsed_ms, 200,
+            )
 
         except Exception as e:
             tb = traceback.format_exc()
