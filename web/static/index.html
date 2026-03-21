@@ -31,36 +31,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .btn-header { color: var(--muted); font-size: 12px; text-decoration: none; padding: 5px 12px; border: 1px solid var(--border); border-radius: 6px; transition: .2s; }
 .btn-header:hover { color: #fff; border-color: var(--accent); }
 
-/* ── Profile / Billing Modal ────────────────────────── */
-.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 100; justify-content: center; align-items: flex-start; padding-top: 60px; }
-.modal-overlay.open { display: flex; }
-.modal { background: var(--card); border: 1px solid var(--border); border-radius: 14px; width: 560px; max-width: 95vw; max-height: 80vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,.4); }
-.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 0; }
-.modal-close { background: none; border: none; color: var(--muted); font-size: 22px; cursor: pointer; line-height: 1; padding: 4px; }
-.modal-close:hover { color: #fff; }
-.modal-body { padding: 16px 24px 24px; }
-
-.profile-card { display: flex; align-items: center; gap: 14px; padding: 16px 0; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
-.profile-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--accent2); display: flex; align-items: center; justify-content: center; font-size: 20px; color: #fff; font-weight: 600; overflow: hidden; flex-shrink: 0; }
-.profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.profile-name { font-size: 16px; font-weight: 600; color: #fff; }
-.profile-email { font-size: 13px; color: var(--muted); margin-top: 2px; }
-
-.billing-section { margin-bottom: 18px; }
-.billing-title { font-size: 13px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
-.billing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
-.billing-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; text-align: center; }
-.billing-card .val { font-size: 20px; font-weight: 700; color: #fff; }
-.billing-card .lbl { font-size: 11px; color: var(--muted); margin-top: 4px; }
-
-.monthly-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
-.monthly-table th { text-align: left; color: var(--accent); padding: 7px 10px; border-bottom: 1px solid var(--border); font-weight: 500; }
-.monthly-table td { padding: 6px 10px; color: #bbb; border-bottom: 1px solid rgba(42,42,74,0.4); }
-
-.detail-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
-.detail-table th { text-align: left; color: var(--accent); padding: 6px 8px; border-bottom: 1px solid var(--border); font-weight: 500; }
-.detail-table td { padding: 5px 8px; color: #bbb; border-bottom: 1px solid rgba(42,42,74,0.4); }
-.detail-table .dec-BUY { color: var(--accent); } .detail-table .dec-SELL { color: #ff6b6b; } .detail-table .dec-HOLD { color: #ffd93d; }
+.user-chip { text-decoration: none; }
 
 /* ── Container ──────────────────────────────────────── */
 .container { max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
@@ -178,10 +149,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
     <div class="subtitle" id="txt-subtitle"></div>
   </div>
   <div class="header-right">
-    <div class="user-chip" id="user-chip" style="display:none" onclick="openProfileModal()">
+    <a class="user-chip" id="user-chip" style="display:none" href="/billing">
       <div class="user-avatar" id="user-avatar"></div>
       <span id="user-name-display"></span>
-    </div>
+    </a>
     <div class="lang-switch">
       <button id="btn-zh" onclick="setLang('zh')">ZH</button>
       <button id="btn-en" onclick="setLang('en')">EN</button>
@@ -276,17 +247,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   <div class="report" id="report"></div>
 </div>
 
-<!-- Profile / Billing Modal -->
-<div class="modal-overlay" id="profile-modal" onclick="if(event.target===this)closeProfileModal()">
-  <div class="modal">
-    <div class="modal-header">
-      <div style="font-size:16px;font-weight:600;color:#fff" id="modal-title"></div>
-      <button class="modal-close" onclick="closeProfileModal()">&times;</button>
-    </div>
-    <div class="modal-body" id="modal-body"></div>
-  </div>
-</div>
-
 <script>
 /* ═══════════════════════════════════════════════════════
    i18n
@@ -306,14 +266,6 @@ const I18N = {
     histTokens: 'Token (入/出)', histTime: '耗时', histModel: '模型',
     tokIn: '输入 Token', tokOut: '输出 Token', tokLlm: 'LLM 调用',
     tokTool: '工具调用', tokTime: '耗时',
-    profileTitle: '账户与账单', cumulative: '累计用量',
-    monthlyBilling: '月度账单', usageDetail: '使用明细',
-    mMonth: '月份', mAnalyses: '分析次数', mTokensIn: '输入 Token', mTokensOut: '输出 Token',
-    mLlmCalls: 'LLM 调用', mTime: '使用时长',
-    cumAnalyses: '累计分析', cumTokensIn: '累计输入', cumTokensOut: '累计输出',
-    cumTime: '累计时长', cumLlm: '累计 LLM',
-    dDate: '日期', dTicker: '股票', dDecision: '决策', dTokens: 'Token (入/出)',
-    dTime: '耗时', dModel: '模型',
   },
   en: {
     subtitle: 'AI-Powered Multi-Agent Stock Analysis',
@@ -329,14 +281,6 @@ const I18N = {
     histTokens: 'Tokens (In/Out)', histTime: 'Time', histModel: 'Model',
     tokIn: 'Input Tokens', tokOut: 'Output Tokens', tokLlm: 'LLM Calls',
     tokTool: 'Tool Calls', tokTime: 'Elapsed',
-    profileTitle: 'Account & Billing', cumulative: 'Cumulative Usage',
-    monthlyBilling: 'Monthly Billing', usageDetail: 'Usage Details',
-    mMonth: 'Month', mAnalyses: 'Analyses', mTokensIn: 'Input Tokens', mTokensOut: 'Output Tokens',
-    mLlmCalls: 'LLM Calls', mTime: 'Time Used',
-    cumAnalyses: 'Total Analyses', cumTokensIn: 'Total Input', cumTokensOut: 'Total Output',
-    cumTime: 'Total Time', cumLlm: 'Total LLM Calls',
-    dDate: 'Date', dTicker: 'Ticker', dDecision: 'Decision', dTokens: 'Tokens (In/Out)',
-    dTime: 'Time', dModel: 'Model',
   }
 };
 
@@ -441,131 +385,6 @@ function renderUserChip(info) {
     nameEl.textContent = displayName;
   }
   chip.style.display = 'flex';
-}
-
-/* ═══════════════════════════════════════════════════════
-   Profile / Billing Modal
-   ═══════════════════════════════════════════════════════ */
-function openProfileModal() {
-  if (!cachedUserInfo) return;
-  const modal = document.getElementById('profile-modal');
-  document.getElementById('modal-title').textContent = t('profileTitle');
-  renderModalBody(cachedUserInfo);
-  modal.classList.add('open');
-}
-
-function closeProfileModal() {
-  document.getElementById('profile-modal').classList.remove('open');
-}
-
-function renderModalBody(info) {
-  const usage = info.usage || {};
-  const body = document.getElementById('modal-body');
-
-  // Profile card
-  let avatarHtml;
-  const displayName = info.name || info.email || 'User';
-  if (info.avatar) {
-    avatarHtml = '<div class="profile-avatar"><img src="' + escapeAttr(info.avatar) + '" alt=""></div>';
-  } else {
-    avatarHtml = '<div class="profile-avatar">' + displayName.charAt(0).toUpperCase() + '</div>';
-  }
-
-  // Cumulative stats
-  const totalTimeSec = Math.round((usage.total_time_ms || 0) / 1000);
-  const totalTimeStr = fmtTime(totalTimeSec);
-
-  let html = ''
-    + '<div class="profile-card">'
-    +   avatarHtml
-    +   '<div>'
-    +     '<div class="profile-name">' + escapeHtml(displayName) + '</div>'
-    +     '<div class="profile-email">' + escapeHtml(info.email || '') + '</div>'
-    +   '</div>'
-    + '</div>'
-
-    // Cumulative usage cards
-    + '<div class="billing-section">'
-    +   '<div class="billing-title">' + t('cumulative') + '</div>'
-    +   '<div class="billing-grid">'
-    +     billingCard(usage.total_analyses || 0, t('cumAnalyses'))
-    +     billingCard(fmtNum(usage.total_tokens_in || 0), t('cumTokensIn'))
-    +     billingCard(fmtNum(usage.total_tokens_out || 0), t('cumTokensOut'))
-    +     billingCard(fmtNum(usage.total_llm_calls || 0), t('cumLlm'))
-    +     billingCard(totalTimeStr, t('cumTime'))
-    +   '</div>'
-    + '</div>';
-
-  // Monthly billing table
-  const monthly = usage.monthly || [];
-  if (monthly.length > 0) {
-    html += '<div class="billing-section">'
-      + '<div class="billing-title">' + t('monthlyBilling') + '</div>'
-      + '<table class="monthly-table"><thead><tr>'
-      + '<th>' + t('mMonth') + '</th>'
-      + '<th>' + t('mAnalyses') + '</th>'
-      + '<th>' + t('mTokensIn') + '</th>'
-      + '<th>' + t('mTokensOut') + '</th>'
-      + '<th>' + t('mLlmCalls') + '</th>'
-      + '<th>' + t('mTime') + '</th>'
-      + '</tr></thead><tbody>';
-    for (const m of monthly) {
-      const mTimeSec = Math.round((m.total_time_ms || 0) / 1000);
-      html += '<tr>'
-        + '<td>' + m.month + '</td>'
-        + '<td>' + m.analyses + '</td>'
-        + '<td>' + fmtNum(m.tokens_in) + '</td>'
-        + '<td>' + fmtNum(m.tokens_out) + '</td>'
-        + '<td>' + m.llm_calls + '</td>'
-        + '<td>' + fmtTime(mTimeSec) + '</td>'
-        + '</tr>';
-    }
-    html += '</tbody></table></div>';
-  }
-
-  // Detailed usage records
-  const records = (usage.records || []).slice().reverse();
-  if (records.length > 0) {
-    html += '<div class="billing-section">'
-      + '<div class="billing-title">' + t('usageDetail') + '</div>'
-      + '<table class="detail-table"><thead><tr>'
-      + '<th>' + t('dDate') + '</th>'
-      + '<th>' + t('dTicker') + '</th>'
-      + '<th>' + t('dDecision') + '</th>'
-      + '<th>' + t('dTokens') + '</th>'
-      + '<th>' + t('dTime') + '</th>'
-      + '<th>' + t('dModel') + '</th>'
-      + '</tr></thead><tbody>';
-    for (const r of records) {
-      const dec = (r.decision || '').replace(/[^A-Z]/g, '');
-      const d = dec.includes('BUY') ? 'BUY' : dec.includes('SELL') ? 'SELL' : 'HOLD';
-      const secs = Math.round((r.elapsed_ms || 0) / 1000);
-      html += '<tr>'
-        + '<td>' + (r.trade_date || '') + '</td>'
-        + '<td>' + (r.ticker || '') + '</td>'
-        + '<td class="dec-' + d + '">' + d + '</td>'
-        + '<td>' + fmtNum(r.tokens_in) + ' / ' + fmtNum(r.tokens_out) + '</td>'
-        + '<td>' + secs + 's</td>'
-        + '<td style="font-size:11px">' + (r.model || '') + '</td>'
-        + '</tr>';
-    }
-    html += '</tbody></table></div>';
-  }
-
-  body.innerHTML = html;
-}
-
-function billingCard(val, label) {
-  return '<div class="billing-card"><div class="val">' + val + '</div><div class="lbl">' + label + '</div></div>';
-}
-
-function fmtTime(totalSec) {
-  if (totalSec < 60) return totalSec + 's';
-  const m = Math.floor(totalSec / 60);
-  const s = totalSec % 60;
-  if (m < 60) return m + 'm ' + s + 's';
-  const h = Math.floor(m / 60);
-  return h + 'h ' + (m % 60) + 'm';
 }
 
 function renderUsageBar(usage) {

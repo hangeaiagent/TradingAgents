@@ -240,6 +240,14 @@ async def index(request: Request):
     return HTMLResponse(html_path.read_text(encoding="utf-8"))
 
 
+@app.get("/billing", response_class=HTMLResponse)
+async def billing_page(request: Request):
+    if not request.session.get("access_token"):
+        return RedirectResponse(url="/", status_code=302)
+    html_path = Path(__file__).parent / "static" / "billing.html"
+    return HTMLResponse(html_path.read_text(encoding="utf-8"))
+
+
 # ---------------------------------------------------------------------------
 # Routes — auth
 # ---------------------------------------------------------------------------
