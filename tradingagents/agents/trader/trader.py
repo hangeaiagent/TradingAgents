@@ -4,8 +4,8 @@ import json
 
 
 def create_trader(llm, memory, config=None):
-    from tradingagents.agents.utils.language import get_language_suffix
-    lang_suffix = get_language_suffix(config or {})
+    from tradingagents.agents.utils.language import is_chinese
+    zh = is_chinese(config)
 
     def trader_node(state, name):
         company_name = state["company_of_interest"]
@@ -23,17 +23,27 @@ def create_trader(llm, memory, config=None):
             for i, rec in enumerate(past_memories, 1):
                 past_memory_str += rec["recommendation"] + "\n\n"
         else:
-            past_memory_str = "No past memories found."
+            past_memory_str = "无历史记录。" if zh else "No past memories found."
 
-        context = {
-            "role": "user",
-            "content": f"Based on a comprehensive analysis by a team of analysts, here is an investment plan tailored for {company_name}. This plan incorporates insights from current technical market trends, macroeconomic indicators, and social media sentiment. Use this plan as a foundation for evaluating your next trading decision.\n\nProposed Investment Plan: {investment_plan}\n\nLeverage these insights to make an informed and strategic decision.",
-        }
+        if zh:
+            context = {
+                "role": "user",
+                "content": f"基于分析师团队的全面分析，以下是为 {company_name} 量身定制的投资计划。该计划融合了当前技术市场趋势、宏观经济指标和社交媒体情绪的洞察。请以此为基础评估你的下一步交易决策。\n\n建议的投资计划：{investment_plan}\n\n请利用这些洞察做出明智且具有战略性的决策。",
+            }
+            system_content = f"""【重要：你的全部输出必须使用简体中文。仅保留股票代码、技术指标名称和数值为英文。】
+
+你是一位交易代理，负责分析市场数据并做出投资决策。基于你的分析，提供具体的买入、卖出或持有建议。以明确的决策结束，并始终在回复末尾加上 'FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL**' 来确认你的建议。不要忘记利用过去决策的经验教训来学习和改进。以下是你在类似交易情境中的反思和经验教训：{past_memory_str}"""
+        else:
+            context = {
+                "role": "user",
+                "content": f"Based on a comprehensive analysis by a team of analysts, here is an investment plan tailored for {company_name}. This plan incorporates insights from current technical market trends, macroeconomic indicators, and social media sentiment. Use this plan as a foundation for evaluating your next trading decision.\n\nProposed Investment Plan: {investment_plan}\n\nLeverage these insights to make an informed and strategic decision.",
+            }
+            system_content = f"""You are a trading agent analyzing market data to make investment decisions. Based on your analysis, provide a specific recommendation to buy, sell, or hold. End with a firm decision and always conclude your response with 'FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL**' to confirm your recommendation. Do not forget to utilize lessons from past decisions to learn from your mistakes. Here is some reflections from similar situations you traded in and the lessons learned: {past_memory_str}"""
 
         messages = [
             {
                 "role": "system",
-                "content": f"""You are a trading agent analyzing market data to make investment decisions. Based on your analysis, provide a specific recommendation to buy, sell, or hold. End with a firm decision and always conclude your response with 'FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL**' to confirm your recommendation. Do not forget to utilize lessons from past decisions to learn from your mistakes. Here is some reflections from similar situatiosn you traded in and the lessons learned: {past_memory_str}""" + lang_suffix,
+                "content": system_content,
             },
             context,
         ]

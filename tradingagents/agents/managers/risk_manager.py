@@ -3,8 +3,8 @@ import json
 
 
 def create_risk_manager(llm, memory, config=None):
-    from tradingagents.agents.utils.language import get_language_suffix
-    lang_suffix = get_language_suffix(config or {})
+    from tradingagents.agents.utils.language import is_chinese
+    zh = is_chinese(config)
 
     def risk_manager_node(state) -> dict:
 
@@ -25,7 +25,31 @@ def create_risk_manager(llm, memory, config=None):
         for i, rec in enumerate(past_memories, 1):
             past_memory_str += rec["recommendation"] + "\n\n"
 
-        prompt = f"""As the Risk Management Judge and Debate Facilitator, your goal is to evaluate the debate between three risk analysts—Aggressive, Neutral, and Conservative—and determine the best course of action for the trader. Your decision must result in a clear recommendation: Buy, Sell, or Hold. Choose Hold only if strongly justified by specific arguments, not as a fallback when all sides seem valid. Strive for clarity and decisiveness.
+        if zh:
+            prompt = f"""【重要：你的全部输出必须使用简体中文。仅保留股票代码、技术指标名称和数值为英文。】
+
+作为风险管理裁判和辩论主持人，你的目标是评估三位风险分析师——激进型、中立型和保守型——之间的辩论，并为交易员确定最佳行动方案。你的决策必须给出明确的建议：买入、卖出或持有。仅在有具体论据强力支持时才选择持有，不要将其作为各方论点都有道理时的默认选项。力求清晰和果断。
+
+决策指南：
+1. **总结关键论点**：提取每位分析师最有力的观点，聚焦于与当前情境的相关性。
+2. **提供理由**：用辩论中的直接引述和反驳来支持你的建议。
+3. **优化交易员计划**：从交易员的原始计划 **{trader_plan}** 出发，根据分析师的洞察进行调整。
+4. **从过去的错误中学习**：利用 **{past_memory_str}** 中的经验教训来纠正以往的判断失误，改进当前决策，确保不会做出导致亏损的错误 BUY/SELL/HOLD 判断。
+
+交付成果：
+- 一个清晰且可执行的建议：买入、卖出或持有。
+- 基于辩论和过去反思的详细推理。
+
+---
+
+**分析师辩论历史：**
+{history}
+
+---
+
+聚焦于可执行的洞察和持续改进。建立在过去的经验教训之上，批判性地评估所有观点，确保每个决策都推动更好的结果。"""
+        else:
+            prompt = f"""As the Risk Management Judge and Debate Facilitator, your goal is to evaluate the debate between three risk analysts—Aggressive, Neutral, and Conservative—and determine the best course of action for the trader. Your decision must result in a clear recommendation: Buy, Sell, or Hold. Choose Hold only if strongly justified by specific arguments, not as a fallback when all sides seem valid. Strive for clarity and decisiveness.
 
 Guidelines for Decision-Making:
 1. **Summarize Key Arguments**: Extract the strongest points from each analyst, focusing on relevance to the context.
@@ -39,12 +63,12 @@ Deliverables:
 
 ---
 
-**Analysts Debate History:**  
+**Analysts Debate History:**
 {history}
 
 ---
 
-Focus on actionable insights and continuous improvement. Build on past lessons, critically evaluate all perspectives, and ensure each decision advances better outcomes.""" + lang_suffix
+Focus on actionable insights and continuous improvement. Build on past lessons, critically evaluate all perspectives, and ensure each decision advances better outcomes."""
 
         response = llm.invoke(prompt)
 
