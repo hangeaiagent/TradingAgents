@@ -1,0 +1,148 @@
+
+
+  从截图看，问题不是 UI
+  标签（那些已经是中文：市场分析师、舆情分析师等），而是 LLM
+  生成的分析内容仍然是英文。比如市场分析师输出的是：
+
+  ▎ "I will provide a detailed financial analysis report for Yonyou
+  Software (用友软件) in Simplified Chinese"
+
+  LLM 意识到要用中文，但实际仍在用英文输出。
+
+  代码流程分析
+
+  中文输出的完整链路如下：
+
+  ┌───────────────────────────────┬──────────────────────────┬────────┐
+  │             步骤              │           位置           │  状态  │
+  ├───────────────────────────────┼──────────────────────────┼────────┤
+  │ 1. 前端发送 language: "zh"    │ web/static/index.html    │ ✅     │
+  │                               │ L376                     │        │
+  ├───────────────────────────────┼──────────────────────────┼────────┤
+  │ 2. build_config() 设置        │                          │        │
+  │ config["output_language"] =   │ web/app.py L167          │ ✅     │
+  │ "zh"                          │                          │        │
+  ├───────────────────────────────┼──────────────────────────┼────────┤
+  │ 3. Config 传入                │ web/app.py L505          │ ✅     │
+  │ TradingAgentsGraph            │                          │        │
+  ├───────────────────────────────┼──────────────────────────┼────────┤
+  │ 4. Config 传入各 agent        │ graph/setup.py L63-108   │ ✅     │
+  │ creator                       │                          │        │
+  ├───────────────────────────────┼──────────────────────────┼────────┤
+  │ 5.                            │                          │        │
+  │ get_language_suffix(config)   │ agents/utils/language.py │ ✅     │
+  │ 生成中文后缀                  │                          │        │
+  ├───────────────────────────────┼──────────────────────────┼────────┤
+  │ 6. 后缀拼入 system prompt     │ 各 agent 文件            │ 需验证 │
+  └───────────────────────────────┴──────────────────────────┴────────┘
+
+  可能的根因                                                              
+  
+  代码架构上看，Web 端的中文指令链路是完整的。但 LLM                      
+  仍输出英文，可能原因有 3 个：                                   
+                                                                          
+  1. 中文指令强度不够                                                     
+  - language.py 中的 LANG_SUFFIX 可能只是一个较弱的提示（如
+  "请用中文"），而 agent 的主 system prompt 是大段英文，LLM 倾向于沿用英文
+  - 从截图看 LLM 说 "I will provide...in Simplified Chinese" —            
+  说明它收到了中文指令但没有遵从                                          
+                                                                          
+  2. prompt 模板注入位置问题
+  - lang_suffix 可能被放在 system prompt 末尾，权重不够                   
+  - 或 {lang_suffix} 占位符在某些 agent 中可能拼接错误（空字符串）        
+                                                                          
+  3. 模型能力问题                                                         
+  - 使用的 Gemini 模型通过 One-API 代理，某些模型对中文指令的遵从度较低   
+  - 尤其是 gemini-3-flash-preview 这种快速模型，可能更倾向英文输出        
+                                                                          
+  建议修复方向                                                            
+                                                                          
+  1. 检查 language.py 中 LANG_SUFFIX 的实际内容和强度 — 是否足够明确      
+  2. 检查 lang_suffix 在各 agent prompt 中的注入位置 — 应该放在 system    
+  prompt 最前面而非末尾                                                   
+  3. 考虑将整个 system prompt 翻译成中文，而不仅仅追加一句 "请用中文"
+                                                                          
+  需要我逐一检查这些具体文件来确认根因吗？                                
+                                                                          
+✻ Baked for 2m 35s                                                        
+                                                                         
+❯ 检查 lang_suffix 在各 agent prompt 中的注入位置 — 应该放在 system       
+  prompt 最前面而非末尾                                                   
+                                                                          
+  将整个 system prompt 翻译成中文                                         
+                                                                          
+⏺ Let me first check the current language suffix and all agent prompts.   
+                                                                         
+  Searched for 1 pattern, read 1 file (ctrl+o to expand)                  
+                                                                         
+⏺ Now let me read all 12 agent files in parallel to check the prompt      
+  templates.                                                             
+                                                                          
+  Read 12 files (ctrl+o to expand)                                
+                                                                          
+⏺ Now I have a complete picture. Let me also check if there's a portfolio 
+  manager agent.                                                          
+                                                                          
+  Searched for 1 pattern (ctrl+o to expand)                       
+                                                                          
+⏺ Good, 12 agent files全部读完了。现在我完全理解了问题。开始修改。        
+                                                                          
+  问题总结                                                                
+                                                                  
+  所有 12 个 agent 的 lang_suffix 都是 追加在英文 prompt 末尾，这导致：   
+  - 整个 system prompt 是大段英文                                 
+  - 中文指令只在最后一小段                                                
+  - LLM（尤其是 Gemini Flash）看到主体是英文，倾向于用英文回复            
+                                                                          
+  修改方案                                                                
+                                                                          
+  1. language.py: 重写为两套完整的 prompt 系统 — 当 lang="zh"             
+  时，提供完整中文 prompt 模板                                            
+  2. 12 个 agent 文件: 根据语言选择使用中文或英文 prompt                  
+                                                                          
+  开始修改：             
+
+
+  修改了 13 个文件
+
+  tradingagents/agents/utils/language.py — 重写：
+  - 移除旧的 LANG_SUFFIX 末尾追加方式
+  - 新增 is_chinese(config) 判断函数
+  - 新增 get_analyst_boilerplate(config) 返回完整的中/英文协作框架 prompt
+  - 中文 boilerplate 最前面放置 【重要：你的全部输出必须使用简体中文】
+
+  12 个 agent 文件 — 每个都改为双语 prompt 结构：
+
+  ┌───────────────────────────────────┬──────────────┐
+  │               文件                │     角色     │
+  ├───────────────────────────────────┼──────────────┤
+  │ analysts/market_analyst.py        │ 市场分析师   │
+  ├───────────────────────────────────┼──────────────┤
+  │ analysts/fundamentals_analyst.py  │ 基本面分析师 │
+  ├───────────────────────────────────┼──────────────┤
+  │ analysts/news_analyst.py          │ 新闻分析师   │
+  ├───────────────────────────────────┼──────────────┤
+  │ analysts/social_media_analyst.py  │ 舆情分析师   │
+  ├───────────────────────────────────┼──────────────┤
+  │ researchers/bull_researcher.py    │ 多头研究员   │
+  ├───────────────────────────────────┼──────────────┤
+  │ researchers/bear_researcher.py    │ 空头研究员   │
+  ├───────────────────────────────────┼──────────────┤
+  │ managers/research_manager.py      │ 研究主管     │
+  ├───────────────────────────────────┼──────────────┤
+  │ managers/risk_manager.py          │ 风险主管     │
+  ├───────────────────────────────────┼──────────────┤
+  │ trader/trader.py                  │ 交易员       │
+  ├───────────────────────────────────┼──────────────┤
+  │ risk_mgmt/aggressive_debator.py   │ 激进型辩论者 │
+  ├───────────────────────────────────┼──────────────┤
+  │ risk_mgmt/conservative_debator.py │ 保守型辩论者 │
+  ├───────────────────────────────────┼──────────────┤
+  │ risk_mgmt/neutral_debator.py      │ 中立型辩论者 │
+  └───────────────────────────────────┴──────────────┘                    
+   
+  核心改动                                                                
+                                                                  
+  1. 中文指令从末尾移到最前面 — 【重要：你的全部输出必须使用简体中文】    
+  作为 system prompt 第一句                                       
+                                    

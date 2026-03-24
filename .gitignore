@@ -230,3 +230,7 @@ __marimo__/
 
 # Eval results
 eval_results/
+
+.DS_Store
+.vscode/
+data/
