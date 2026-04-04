@@ -44,10 +44,10 @@ if os.environ.get("ONE_API_KEY") and not os.environ.get("OPENAI_API_KEY"):
 # ---------------------------------------------------------------------------
 # AgentPit OAuth2 configuration
 # ---------------------------------------------------------------------------
-AGENTPIT_CLIENT_ID = os.environ.get("AGENTPIT_CLIENT_ID", "cmmvv7gpd000560c8yixfhvp4")
-AGENTPIT_CLIENT_SECRET = os.environ.get("AGENTPIT_CLIENT_SECRET", "cmmvv7gpd000660c8mq0xfjk2")
+AGENTPIT_CLIENT_ID = os.environ.get("AGENTPIT_CLIENT_ID", "cmnkfxkb1002860t9jy07egg5")
+AGENTPIT_CLIENT_SECRET = os.environ.get("AGENTPIT_CLIENT_SECRET", "cmnkfxkb1002960t9d86xm8n4")
 AGENTPIT_REDIRECT_URI = os.environ.get(
-    "AGENTPIT_REDIRECT_URI", "https://trading.agentpit.io/api/auth/callback"
+    "AGENTPIT_REDIRECT_URI", "https://trading.agentpit.io/api/auth/agentpit/callback"
 )
 AGENTPIT_AUTHORIZE_URL = "https://agentpit.io/api/oauth/authorize"
 AGENTPIT_TOKEN_URL = "https://agentpit.io/api/oauth/token"
@@ -224,6 +224,12 @@ async def index(request: Request):
     return HTMLResponse(html_path.read_text(encoding="utf-8"))
 
 
+@app.get("/sso-callback", response_class=HTMLResponse)
+async def sso_callback_page(request: Request):
+    html_path = Path(__file__).parent / "static" / "sso-callback.html"
+    return HTMLResponse(html_path.read_text(encoding="utf-8"))
+
+
 @app.get("/billing", response_class=HTMLResponse)
 async def billing_page(request: Request):
     if not request.session.get("access_token"):
@@ -246,6 +252,12 @@ async def history_page(request: Request):
 
 @app.get("/api/auth/login")
 async def auth_login(request: Request):
+    """Legacy login redirect — forwards to /api/auth/agentpit/login."""
+    return RedirectResponse(url="/api/auth/agentpit/login", status_code=302)
+
+
+@app.get("/api/auth/agentpit/login")
+async def auth_agentpit_login(request: Request):
     state = secrets.token_urlsafe(32)
     request.session["oauth_state"] = state
     params = urlencode({
@@ -257,33 +269,39 @@ async def auth_login(request: Request):
     return RedirectResponse(url=f"{AGENTPIT_AUTHORIZE_URL}?{params}")
 
 
-@app.get("/api/auth/callback")
-async def auth_callback(request: Request, code: str = "", state: str = ""):
-    saved_state = request.session.pop("oauth_state", None)
-    if not state or state != saved_state:
-        return HTMLResponse("<h3>state mismatch — please login again</h3>", status_code=400)
-    if not code:
-        return HTMLResponse("<h3>missing authorization code</h3>", status_code=400)
+@app.get("/api/auth/agentpit/sso")
+async def auth_agentpit_sso(request: Request):
+    """SSO entry — silent OAuth redirect with sso: prefixed state for anti-loop."""
+    if request.session.get("access_token"):
+        return RedirectResponse(url="/", status_code=302)
+    state = "sso:" + secrets.token_urlsafe(32)
+    request.session["oauth_state"] = state
+    params = urlencode({
+        "response_type": "code",
+        "client_id": AGENTPIT_CLIENT_ID,
+        "redirect_uri": AGENTPIT_REDIRECT_URI,
+        "state": state,
+    })
+    return RedirectResponse(url=f"{AGENTPIT_AUTHORIZE_URL}?{params}")
 
-    # Exchange code → token
-    try:
-        async with httpx.AsyncClient(timeout=30) as client:
-            resp = await client.post(AGENTPIT_TOKEN_URL, data={
-                "grant_type": "authorization_code",
-                "code": code,
-                "redirect_uri": AGENTPIT_REDIRECT_URI,
-                "client_id": AGENTPIT_CLIENT_ID,
-                "client_secret": AGENTPIT_CLIENT_SECRET,
-            })
-            resp.raise_for_status()
-            token_data = resp.json()
-    except Exception as e:
-        return HTMLResponse(f"<h3>Token exchange failed: {e}</h3>", status_code=502)
+
+async def _exchange_code_and_set_session(request: Request, code: str, access_token_out: list):
+    """Exchange authorization code for token and populate session. Returns access_token."""
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.post(AGENTPIT_TOKEN_URL, data={
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": AGENTPIT_REDIRECT_URI,
+            "client_id": AGENTPIT_CLIENT_ID,
+            "client_secret": AGENTPIT_CLIENT_SECRET,
+        })
+        resp.raise_for_status()
+        token_data = resp.json()
 
     access_token = token_data.get("access_token")
     if not access_token:
-        return HTMLResponse("<h3>No access_token received</h3>", status_code=502)
-
+        return None
+    access_token_out.append(access_token)
     request.session["access_token"] = access_token
 
     # Fetch user profile
@@ -293,10 +311,9 @@ async def auth_callback(request: Request, code: str = "", state: str = ""):
                 AGENTPIT_USERINFO_URL,
                 headers={"Authorization": f"Bearer {access_token}"},
             )
-            print(f"[USERINFO] callback fetch: status={resp.status_code} body={resp.text[:500]}", flush=True)
+            log.info("[USERINFO] callback fetch: status=%s body=%s", resp.status_code, resp.text[:500])
             if resp.status_code == 200:
                 info = resp.json()
-                # Try common field names
                 request.session["user_name"] = (
                     info.get("name") or info.get("username") or info.get("login")
                     or info.get("displayName") or info.get("nickname") or ""
@@ -313,7 +330,6 @@ async def auth_callback(request: Request, code: str = "", state: str = ""):
                     or info.get("userId") or info.get("user_id")
                     or access_token[:16]
                 )
-                # Persist user to DB
                 db.upsert_user(
                     request.session["user_id"],
                     request.session["user_name"],
@@ -325,8 +341,49 @@ async def auth_callback(request: Request, code: str = "", state: str = ""):
     except Exception as e:
         log.warning("userinfo fetch failed: %s", e)
     request.session.setdefault("user_id", access_token[:16])
+    return access_token
+
+
+@app.get("/api/auth/agentpit/callback")
+async def auth_agentpit_callback(request: Request, code: str = "", state: str = ""):
+    saved_state = request.session.pop("oauth_state", None)
+    is_sso = state.startswith("sso:") if state else False
+
+    if not state or state != saved_state:
+        if is_sso:
+            # SSO failed — redirect to login page with error flag (no loop)
+            return RedirectResponse(url="/?sso_error=state_mismatch", status_code=302)
+        return HTMLResponse("<h3>state mismatch — please login again</h3>", status_code=400)
+    if not code:
+        if is_sso:
+            return RedirectResponse(url="/?sso_error=no_code", status_code=302)
+        return HTMLResponse("<h3>missing authorization code</h3>", status_code=400)
+
+    try:
+        token_out: list = []
+        await _exchange_code_and_set_session(request, code, token_out)
+        if not token_out:
+            if is_sso:
+                return RedirectResponse(url="/?sso_error=no_token", status_code=302)
+            return HTMLResponse("<h3>No access_token received</h3>", status_code=502)
+    except Exception as e:
+        if is_sso:
+            return RedirectResponse(url=f"/?sso_error=exchange_failed", status_code=302)
+        return HTMLResponse(f"<h3>Token exchange failed: {e}</h3>", status_code=502)
+
+    if is_sso:
+        # SSO mode: redirect to SSO callback page which notifies frontend via hash token
+        return RedirectResponse(url=f"/sso-callback#token={token_out[0]}", status_code=302)
 
     return RedirectResponse(url="/", status_code=302)
+
+
+# Keep legacy callback path working (redirect to new path)
+@app.get("/api/auth/callback")
+async def auth_callback_legacy(request: Request, code: str = "", state: str = ""):
+    """Legacy callback — redirect to new agentpit callback path."""
+    params = urlencode({"code": code, "state": state})
+    return RedirectResponse(url=f"/api/auth/agentpit/callback?{params}", status_code=302)
 
 
 @app.get("/api/auth/logout")
@@ -619,6 +676,81 @@ def _record_usage(request, ticker, trade_date, decision, stats, elapsed_ms, mode
         model=model_name,
         report=report,
     )
+
+
+# ---------------------------------------------------------------------------
+# Token consumption reporting (agentpit-tokens)
+# ---------------------------------------------------------------------------
+
+class TokenReportRequest(BaseModel):
+    agent_id: str
+    tokens_used: Optional[int] = None
+    input_tokens: Optional[int] = None
+    output_tokens: Optional[int] = None
+    started_at: Optional[str] = None
+    ended_at: Optional[str] = None
+    model_name: Optional[str] = None
+    request_id: Optional[str] = None
+    metadata: Optional[dict] = None
+
+
+@app.post("/api/v1/tokens/report")
+async def report_tokens(req: TokenReportRequest, request: Request):
+    """Token consumption reporting endpoint.
+
+    Accepts Bearer token auth (ApiKey or access_token) and records
+    token usage for the given agent.
+    """
+    auth_header = request.headers.get("authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return JSONResponse({"success": False, "error": "Missing or invalid Authorization header"}, status_code=401)
+
+    bearer_token = auth_header[7:]
+    if not bearer_token:
+        return JSONResponse({"success": False, "error": "Empty bearer token"}, status_code=401)
+
+    # Validate required fields
+    if not req.agent_id:
+        return JSONResponse({"success": False, "error": "agent_id is required"}, status_code=400)
+
+    # Validate time order
+    if req.started_at and req.ended_at and req.started_at >= req.ended_at:
+        return JSONResponse({"success": False, "error": "started_at must be before ended_at"}, status_code=400)
+
+    # Calculate tokens_used if not provided
+    tokens_used = req.tokens_used
+    if tokens_used is None:
+        tokens_used = (req.input_tokens or 0) + (req.output_tokens or 0)
+
+    # Record to database
+    try:
+        record_id = db.record_token_usage(
+            agent_id=req.agent_id,
+            bearer_token=bearer_token,
+            tokens_used=tokens_used,
+            input_tokens=req.input_tokens or 0,
+            output_tokens=req.output_tokens or 0,
+            started_at=req.started_at,
+            ended_at=req.ended_at,
+            model_name=req.model_name or "",
+            request_id=req.request_id or "",
+            metadata=req.metadata,
+        )
+    except Exception as e:
+        log.error("Token report DB error: %s", e)
+        return JSONResponse({"success": False, "error": "Internal server error"}, status_code=500)
+
+    return {
+        "success": True,
+        "data": {
+            "id": record_id,
+            "agent_id": req.agent_id,
+            "tokens_used": tokens_used,
+            "input_tokens": req.input_tokens or 0,
+            "output_tokens": req.output_tokens or 0,
+            "model_name": req.model_name or "",
+        },
+    }
 
 
 # ---------------------------------------------------------------------------

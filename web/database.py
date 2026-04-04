@@ -51,6 +51,24 @@ CREATE TABLE IF NOT EXISTS trading_analysis_records (
 
 CREATE INDEX IF NOT EXISTS idx_trading_records_user
     ON trading_analysis_records(user_id, timestamp);
+
+CREATE TABLE IF NOT EXISTS trading_token_usage (
+    id SERIAL PRIMARY KEY,
+    agent_id TEXT NOT NULL,
+    bearer_token TEXT NOT NULL,
+    tokens_used INTEGER DEFAULT 0,
+    input_tokens INTEGER DEFAULT 0,
+    output_tokens INTEGER DEFAULT 0,
+    started_at TEXT,
+    ended_at TEXT,
+    model_name TEXT,
+    request_id TEXT,
+    metadata_json TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_trading_token_usage_agent
+    ON trading_token_usage(agent_id, created_at);
 """
 
 # ---------------------------------------------------------------------------
@@ -84,6 +102,24 @@ CREATE TABLE IF NOT EXISTS trading_analysis_records (
 
 CREATE INDEX IF NOT EXISTS idx_trading_records_user
     ON trading_analysis_records(user_id, timestamp);
+
+CREATE TABLE IF NOT EXISTS trading_token_usage (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    agent_id TEXT NOT NULL,
+    bearer_token TEXT NOT NULL,
+    tokens_used INTEGER DEFAULT 0,
+    input_tokens INTEGER DEFAULT 0,
+    output_tokens INTEGER DEFAULT 0,
+    started_at TEXT,
+    ended_at TEXT,
+    model_name TEXT,
+    request_id TEXT,
+    metadata_json TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_trading_token_usage_agent
+    ON trading_token_usage(agent_id, created_at);
 """
 
 
@@ -480,3 +516,44 @@ class Database:
             "monthly": monthly,
             "records": recent,
         }
+
+    # ==================================================================
+    # Token usage reporting (agentpit-tokens)
+    # ==================================================================
+
+    def record_token_usage(
+        self,
+        agent_id: str,
+        bearer_token: str,
+        tokens_used: int = 0,
+        input_tokens: int = 0,
+        output_tokens: int = 0,
+        started_at: str | None = None,
+        ended_at: str | None = None,
+        model_name: str = "",
+        request_id: str = "",
+        metadata: dict | None = None,
+    ) -> int:
+        metadata_json = json.dumps(metadata, ensure_ascii=False) if metadata else None
+        with self._conn() as (conn, cur):
+            if self._backend == "pg":
+                cur.execute(
+                    """INSERT INTO trading_token_usage
+                       (agent_id, bearer_token, tokens_used, input_tokens, output_tokens,
+                        started_at, ended_at, model_name, request_id, metadata_json)
+                       VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                       RETURNING id""",
+                    (agent_id, bearer_token, tokens_used, input_tokens, output_tokens,
+                     started_at, ended_at, model_name, request_id, metadata_json),
+                )
+                return cur.fetchone()[0]
+            else:
+                cur.execute(
+                    """INSERT INTO trading_token_usage
+                       (agent_id, bearer_token, tokens_used, input_tokens, output_tokens,
+                        started_at, ended_at, model_name, request_id, metadata_json)
+                       VALUES (?,?,?,?,?,?,?,?,?,?)""",
+                    (agent_id, bearer_token, tokens_used, input_tokens, output_tokens,
+                     started_at, ended_at, model_name, request_id, metadata_json),
+                )
+                return cur.lastrowid

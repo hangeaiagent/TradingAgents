@@ -40,7 +40,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   </div>
   <div class="divider"></div>
   <div class="login-hint" id="txt-hint"></div>
-  <a class="btn-login" href="/api/auth/login" id="txt-btn"></a>
+  <div id="sso-status" style="display:none; margin-bottom:16px; color:#4ecdc4; font-size:13px;"></div>
+  <a class="btn-login" href="/api/auth/agentpit/login" id="txt-btn"></a>
   <div style="margin-top:20px;">
     <div class="lang-switch">
       <button id="btn-zh" onclick="setLang('zh')">ZH</button>
@@ -55,12 +56,14 @@ const I18N = {
   zh: {
     subtitle: 'AI 驱动的多智能体股票分析',
     hint: '请通过 AgentPit 平台授权登录后使用股票分析功能',
-    btn: 'AgentPit 授权登录',
+    btn: 'agentpit 授权登陆',
+    sso_trying: '正在尝试自动登录...',
   },
   en: {
     subtitle: 'AI-Powered Multi-Agent Stock Analysis',
     hint: 'Please login via AgentPit to access the stock analysis platform',
-    btn: 'Login with AgentPit',
+    btn: 'agentpit Login',
+    sso_trying: 'Attempting auto-login...',
   }
 };
 let lang = localStorage.getItem('ta_lang') || 'zh';
@@ -74,6 +77,28 @@ function apply() {
   document.getElementById('btn-en').className = lang === 'en' ? 'active' : '';
 }
 apply();
+
+/* ── SSO Auto-Login (anti-loop: each session attempts at most once) ── */
+(function() {
+  // Check URL for sso_error flag (callback returned error)
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('sso_error')) {
+    sessionStorage.setItem('sso_attempted', '1');
+    if (history.replaceState) history.replaceState(null, '', '/');
+    return;
+  }
+  // If already attempted SSO this session or came from agentpit.io with referrer, skip
+  if (sessionStorage.getItem('sso_attempted') || sessionStorage.getItem('sso_completed')) {
+    return;
+  }
+  // Attempt SSO once
+  sessionStorage.setItem('sso_attempted', '1');
+  var s = I18N[lang] || I18N.zh;
+  var el = document.getElementById('sso-status');
+  el.textContent = s.sso_trying;
+  el.style.display = 'block';
+  window.location.replace('/api/auth/agentpit/sso');
+})();
 </script>
 </body>
 </html>
