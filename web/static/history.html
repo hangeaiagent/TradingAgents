@@ -12,6 +12,33 @@
   --accent: #4ecdc4; --accent2: #44a08d;
   --green: #2d6a4f; --red: #6a2d2d; --yellow: #6a6a2d;
 }
+[data-theme="light"] {
+  --bg: #f5f5f7; --card: #ffffff; --border: #d1d5db;
+  --text: #1a1a2e; --muted: #6b7280; --dim: #9ca3af;
+  --accent: #0d9488; --accent2: #14b8a6;
+  --green: #dcfce7; --red: #fee2e2; --yellow: #fef9c3;
+}
+[data-theme="light"] .header, [data-theme="light"] .detail-header { background: linear-gradient(135deg, #ffffff 0%, #f0fdfa 100%); }
+[data-theme="light"] .section-header:hover { background: #f3f4f6; }
+[data-theme="light"] h1, [data-theme="light"] .h-ticker,
+[data-theme="light"] .detail-title { color: #111827; }
+[data-theme="light"] .item-content { color: #374151; }
+[data-theme="light"] .item-content h1, [data-theme="light"] .item-content h2 { color: #111827; }
+[data-theme="light"] .item-content h3 { color: #1f2937; }
+[data-theme="light"] .item-content h4, [data-theme="light"] .item-content h5, [data-theme="light"] .item-content h6 { color: #374151; }
+[data-theme="light"] .item-content strong, [data-theme="light"] .item-content b { color: #111827; }
+[data-theme="light"] .item-content em { color: #4b5563; }
+[data-theme="light"] .item-content td { color: #4b5563; }
+[data-theme="light"] .item-content th { background: #f3f4f6; }
+[data-theme="light"] .item-content blockquote { background: rgba(13,148,136,0.04); color: #6b7280; }
+[data-theme="light"] .item-content code { background: rgba(0,0,0,0.06); color: #7c3aed; }
+[data-theme="light"] .item-content pre { background: #f8fafc; }
+[data-theme="light"] .item-content pre code { color: #374151; }
+[data-theme="light"] .item { border-bottom-color: #e5e7eb; }
+[data-theme="light"] .filter-bar input, [data-theme="light"] .filter-bar select { background: #f9fafb; border-color: #d1d5db; color: #111827; }
+[data-theme="light"] .decision-banner.BUY { background: linear-gradient(135deg, #ecfdf5, #d1fae5); border-color: #86efac; }
+[data-theme="light"] .decision-banner.SELL { background: linear-gradient(135deg, #fef2f2, #fee2e2); border-color: #fca5a5; }
+[data-theme="light"] .decision-banner.HOLD { background: linear-gradient(135deg, #fefce8, #fef9c3); border-color: #fde047; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
@@ -122,6 +149,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 </style>
 </head>
 <body>
+<script>
+(function(){var s=localStorage.getItem('ta_theme');var p=window.matchMedia('(prefers-color-scheme:dark)').matches;var t=s||(p?'dark':'light');document.documentElement.setAttribute('data-theme',t)})();
+function toggleTheme(){var c=document.documentElement.getAttribute('data-theme');var n=c==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('ta_theme',n);updateThemeIcon(n)}
+function updateThemeIcon(t){var i=document.getElementById('theme-icon');if(i)i.innerHTML=t==='dark'?'&#9789;':'&#9788;'}
+document.addEventListener('DOMContentLoaded',function(){updateThemeIcon(document.documentElement.getAttribute('data-theme')||'dark')});
+</script>
 
 <!-- ── Header ──────────────────────────────────────── -->
 <div class="header">
@@ -130,6 +163,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
     <div class="page-title" id="txt-page-title"></div>
   </div>
   <div class="header-right">
+    <button id="theme-toggle" onclick="toggleTheme()" title="Toggle theme"
+      style="background:none; border:1px solid var(--border); border-radius:6px; cursor:pointer; color:var(--accent); font-size:1.1em; padding:4px 8px; transition:.2s;">
+      <span id="theme-icon">&#9789;</span>
+    </button>
     <div class="lang-switch">
       <button id="btn-zh" onclick="setLang('zh')">ZH</button>
       <button id="btn-en" onclick="setLang('en')">EN</button>
