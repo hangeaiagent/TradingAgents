@@ -400,10 +400,19 @@ init();
 </script>
 <!-- Evolvr 用户反馈 Widget -->
 <script
+  id="evolvr-widget"
   src="https://evolvr.agentpit.io/widget/feedback-widget.js"
   data-api="https://evolvr.agentpit.io/api/feedback"
   data-app-id="3846ced7-3eee-4df7-bcd1-049064d0af61"
   async>
+</script>
+<script>
+  fetch('/api/user/info').then(r => r.json()).then(data => {
+    if (data.user_id) {
+      var ws = document.getElementById('evolvr-widget');
+      if (ws) ws.setAttribute('data-user-id', data.user_id);
+    }
+  }).catch(() => {});
 </script>
 </body>
 </html>
