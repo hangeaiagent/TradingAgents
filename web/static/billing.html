@@ -4,20 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TradingAgents - Billing</title>
+<link rel="stylesheet" href="/static/theme.css">
+<script src="/static/theme.js"></script>
 <style>
-:root {
-  --bg: #0f1117; --card: #1a1a2e; --border: #2a2a4a;
-  --text: #e0e0e0; --muted: #888; --dim: #555;
-  --accent: #4ecdc4; --accent2: #44a08d;
-  --green: #2d6a4f; --red: #6a2d2d; --yellow: #6a6a2d;
-}
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
 /* ── Header ──────────────────────────────────────────── */
-.header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 14px 32px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.header { background: var(--header-bg); padding: 14px 32px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .header-left { display: flex; align-items: center; gap: 16px; }
-.header-left h1 { font-size: 22px; color: #fff; }
+.header-left h1 { font-size: 22px; color: var(--header-text); }
 .header-left h1 span { color: var(--accent); }
 .header-left h1 a { color: inherit; text-decoration: none; }
 .page-title { font-size: 14px; color: var(--muted); border-left: 1px solid var(--border); padding-left: 16px; }
@@ -96,6 +92,10 @@ tr:hover td { background: rgba(78,205,196,0.03); }
     <div class="user-chip" id="user-chip" style="display:none">
       <div class="user-avatar" id="user-avatar"></div>
       <span id="user-name-display"></span>
+    </div>
+    <div class="theme-switch">
+      <button id="btn-theme-dark" title="Dark Mode">&#127769;</button>
+      <button id="btn-theme-light" title="Light Mode">&#9728;&#65039;</button>
     </div>
     <div class="lang-switch">
       <button id="btn-zh" onclick="setLang('zh')">ZH</button>

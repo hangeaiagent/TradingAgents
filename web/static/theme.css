@@ -1,0 +1,48 @@
+/* ── Theme variables ──────────────────────────────────── */
+:root, [data-theme="dark"] {
+  --bg: #0f1117; --card: #1a1a2e; --border: #2a2a4a;
+  --text: #e0e0e0; --muted: #888; --dim: #555;
+  --accent: #4ecdc4; --accent2: #44a08d;
+  --green: #2d6a4f; --red: #6a2d2d; --yellow: #6a6a2d;
+  --header-bg: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  --header-text: #fff;
+  --shadow: rgba(0,0,0,.4);
+  --chip-bg: rgba(78,205,196,0.08);
+  --chip-border: rgba(78,205,196,0.2);
+  --chip-text: #ccc;
+  --input-border: #333;
+  --input-text: #fff;
+}
+[data-theme="light"] {
+  --bg: #f5f6fa; --card: #ffffff; --border: #e0e0e0;
+  --text: #1a1a2e; --muted: #666; --dim: #999;
+  --accent: #2a9d8f; --accent2: #264653;
+  --green: #b7e4c7; --red: #f4a6a0; --yellow: #f4e285;
+  --header-bg: linear-gradient(135deg, #ffffff 0%, #f0f2f5 100%);
+  --header-text: #1a1a2e;
+  --shadow: rgba(0,0,0,.1);
+  --chip-bg: rgba(42,157,143,0.08);
+  --chip-border: rgba(42,157,143,0.25);
+  --chip-text: #333;
+  --input-border: #ccc;
+  --input-text: #1a1a2e;
+}
+
+/* ── Theme-aware overrides ───────────────────────────── */
+[data-theme="light"] .header { background: var(--header-bg); box-shadow: 0 1px 4px var(--shadow); }
+[data-theme="light"] .header-left h1 { color: var(--header-text); }
+[data-theme="light"] .header-left h1 a { color: var(--header-text); }
+[data-theme="light"] .user-dropdown { box-shadow: 0 6px 20px var(--shadow); }
+[data-theme="light"] .user-dropdown a { color: #333; }
+[data-theme="light"] .user-dropdown a:hover { color: #000; }
+[data-theme="light"] .user-chip { background: var(--chip-bg); border-color: var(--chip-border); color: var(--chip-text); }
+[data-theme="light"] .form-group input,
+[data-theme="light"] .form-group select { background: var(--bg); border-color: var(--input-border); color: var(--input-text); }
+[data-theme="light"] .usage-history td { color: #444; }
+[data-theme="light"] .btn-header { color: var(--muted); }
+[data-theme="light"] .btn-header:hover { color: var(--header-text); border-color: var(--accent); }
+
+/* ── Theme switch button styles ─────────────────────── */
+.theme-switch { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.theme-switch button { background: transparent; border: none; color: var(--muted); font-size: 13px; padding: 4px 8px; cursor: pointer; transition: .2s; line-height: 1; }
+.theme-switch button.active { background: var(--accent); color: #fff; }
