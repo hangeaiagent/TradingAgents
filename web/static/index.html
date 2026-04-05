@@ -195,6 +195,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
       <div class="user-dropdown" id="user-dropdown">
         <a href="/billing"><span class="menu-icon">&#9783;</span><span id="menu-billing"></span></a>
         <a href="/history"><span class="menu-icon">&#9776;</span><span id="menu-history"></span></a>
+        <a href="/feedback"><span class="menu-icon">&#9993;</span><span id="menu-feedback"></span></a>
       </div>
     </div>
     <div class="lang-switch">
@@ -318,7 +319,7 @@ const I18N = {
     tokIn: '输入 Token', tokOut: '输出 Token', tokLlm: 'LLM 调用',
     tokTool: '工具调用', tokTime: '耗时',
     download: '下载报告', dlMd: '下载 Markdown', dlPdf: '下载 PDF',
-    menuBilling: '我的账单', menuHistory: '历史分析',
+    menuBilling: '我的账单', menuHistory: '历史分析', menuFeedback: '问题反馈',
   },
   en: {
     subtitle: 'AI-Powered Multi-Agent Stock Analysis',
@@ -335,7 +336,7 @@ const I18N = {
     tokIn: 'Input Tokens', tokOut: 'Output Tokens', tokLlm: 'LLM Calls',
     tokTool: 'Tool Calls', tokTime: 'Elapsed',
     download: 'Download Report', dlMd: 'Markdown (.md)', dlPdf: 'PDF (.pdf)',
-    menuBilling: 'My Billing', menuHistory: 'Analysis History',
+    menuBilling: 'My Billing', menuHistory: 'Analysis History', menuFeedback: 'Feedback',
   }
 };
 
@@ -401,6 +402,7 @@ function applyI18n() {
   document.getElementById('usage-toggle').textContent = t('usageToggle');
   document.getElementById('menu-billing').textContent = t('menuBilling');
   document.getElementById('menu-history').textContent = t('menuHistory');
+  document.getElementById('menu-feedback').textContent = t('menuFeedback');
   document.getElementById('txt-download').textContent = t('download');
   document.getElementById('btn-dl-md').textContent = t('dlMd');
   document.getElementById('btn-dl-pdf').textContent = t('dlPdf');

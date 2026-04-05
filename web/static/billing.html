@@ -101,6 +101,7 @@ tr:hover td { background: rgba(78,205,196,0.03); }
       <button id="btn-zh" onclick="setLang('zh')">ZH</button>
       <button id="btn-en" onclick="setLang('en')">EN</button>
     </div>
+    <a href="/feedback" class="btn-header" id="txt-feedback"></a>
     <a href="/" class="btn-header" id="txt-back"></a>
     <a href="/api/auth/logout" class="btn-header" id="txt-logout"></a>
   </div>
@@ -152,7 +153,7 @@ tr:hover td { background: rgba(78,205,196,0.03); }
 const I18N = {
   zh: {
     pageTitle: '账户与账单',
-    back: '返回分析', logout: '退出',
+    back: '返回分析', logout: '退出', feedback: '问题反馈',
     cumAnalyses: '累计分析次数', cumTokensIn: '累计输入 Token', cumTokensOut: '累计输出 Token',
     cumLlm: '累计 LLM 调用', cumTime: '累计使用时长',
     monthly: '月度账单',
@@ -169,7 +170,7 @@ const I18N = {
   },
   en: {
     pageTitle: 'Account & Billing',
-    back: 'Back to Analysis', logout: 'Logout',
+    back: 'Back to Analysis', logout: 'Logout', feedback: 'Feedback',
     cumAnalyses: 'Total Analyses', cumTokensIn: 'Total Input Tokens', cumTokensOut: 'Total Output Tokens',
     cumLlm: 'Total LLM Calls', cumTime: 'Total Time',
     monthly: 'Monthly Billing',
@@ -199,6 +200,7 @@ function setLang(l) {
 function applyI18n() {
   document.getElementById('txt-page-title').textContent = t('pageTitle');
   document.getElementById('txt-back').textContent = t('back');
+  document.getElementById('txt-feedback').textContent = t('feedback');
   document.getElementById('txt-logout').textContent = t('logout');
   document.getElementById('title-monthly').textContent = t('monthly');
   document.getElementById('title-detail').textContent = t('detail');

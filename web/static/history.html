@@ -134,6 +134,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
       <button id="btn-zh" onclick="setLang('zh')">ZH</button>
       <button id="btn-en" onclick="setLang('en')">EN</button>
     </div>
+    <a href="/feedback" class="btn-header" id="txt-feedback"></a>
     <a href="/" class="btn-header" id="txt-back"></a>
     <a href="/api/auth/logout" class="btn-header" id="txt-logout"></a>
   </div>
@@ -173,7 +174,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
    ═══════════════════════════════════════════════════════ */
 const I18N = {
   zh: {
-    pageTitle: '历史分析', back: '返回分析', logout: '退出',
+    pageTitle: '历史分析', back: '返回分析', logout: '退出', feedback: '问题反馈',
     filterTicker: '搜索股票代码...', allDecisions: '全部决策',
     showing: '共', records: '条记录',
     viewDetail: '查看详情', noReport: '无报告', noData: '暂无分析记录',
@@ -182,7 +183,7 @@ const I18N = {
     tokensLabel: 'Token', timeLabel: '耗时',
   },
   en: {
-    pageTitle: 'Analysis History', back: 'Back to Analysis', logout: 'Logout',
+    pageTitle: 'Analysis History', back: 'Back to Analysis', logout: 'Logout', feedback: 'Feedback',
     filterTicker: 'Search ticker...', allDecisions: 'All Decisions',
     showing: '', records: 'records',
     viewDetail: 'View Detail', noReport: 'No report', noData: 'No analysis records yet',
@@ -197,6 +198,7 @@ function setLang(l) { lang = l; localStorage.setItem('ta_lang', l); applyI18n();
 function applyI18n() {
   document.getElementById('txt-page-title').textContent = t('pageTitle');
   document.getElementById('txt-back').textContent = t('back');
+  document.getElementById('txt-feedback').textContent = t('feedback');
   document.getElementById('txt-logout').textContent = t('logout');
   document.getElementById('f-ticker').placeholder = t('filterTicker');
   document.getElementById('opt-all').textContent = t('allDecisions');

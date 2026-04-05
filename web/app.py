@@ -246,6 +246,14 @@ async def history_page(request: Request):
     return HTMLResponse(html_path.read_text(encoding="utf-8"))
 
 
+@app.get("/feedback", response_class=HTMLResponse)
+async def feedback_page(request: Request):
+    if not request.session.get("access_token"):
+        return RedirectResponse(url="/", status_code=302)
+    html_path = Path(__file__).parent / "static" / "feedback.html"
+    return HTMLResponse(html_path.read_text(encoding="utf-8"))
+
+
 # ---------------------------------------------------------------------------
 # Routes — auth
 # ---------------------------------------------------------------------------
@@ -441,6 +449,7 @@ async def user_info(request: Request, _auth=Depends(require_auth)):
     usage = db.get_usage_summary(user_id)
 
     return {
+        "user_id": user_id,
         "name": request.session.get("user_name", ""),
         "email": request.session.get("user_email", ""),
         "avatar": request.session.get("user_avatar", ""),
@@ -751,6 +760,53 @@ async def report_tokens(req: TokenReportRequest, request: Request):
             "model_name": req.model_name or "",
         },
     }
+
+
+# ---------------------------------------------------------------------------
+# Routes — Evolvr webhook
+# ---------------------------------------------------------------------------
+
+EVOLVR_API = "https://evolvr.agentpit.io"
+EVOLVR_APP_ID = "3846ced7-3eee-4df7-bcd1-049064d0af61"
+
+
+@app.post("/api/evolvr/webhook")
+async def evolvr_webhook(request: Request):
+    """Receive Evolvr fix/deploy event callbacks."""
+    data = await request.json()
+    event = data.get("event", "")
+    feedback_id = data.get("feedbackId", "")
+    status = data.get("status", "")
+    description = data.get("description", "")
+    pr_url = data.get("prUrl", "")
+
+    log.info(
+        "[Evolvr Webhook] event=%s feedbackId=%s status=%s desc=%s",
+        event, feedback_id, status, description[:80],
+    )
+
+    # Try to find the user who submitted this feedback via Evolvr API
+    # and create an in-app notification for them
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            # Look up which user submitted this feedback
+            resp = await client.get(
+                f"{EVOLVR_API}/api/feedback/{feedback_id}/status"
+            )
+            if resp.status_code == 200:
+                fb_data = resp.json()
+                user_id = fb_data.get("userId") or fb_data.get("user_id")
+                if user_id:
+                    # Store notification in Evolvr (it already does this),
+                    # just log for our records
+                    log.info(
+                        "[Evolvr Webhook] Notification for user=%s: %s → %s",
+                        user_id, event, status,
+                    )
+    except Exception as e:
+        log.warning("[Evolvr Webhook] Error processing callback: %s", e)
+
+    return {"received": True}
 
 
 # ---------------------------------------------------------------------------
