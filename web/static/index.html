@@ -12,6 +12,12 @@
   --accent: #4ecdc4; --accent2: #44a08d;
   --green: #2d6a4f; --red: #6a2d2d; --yellow: #6a6a2d;
 }
+[data-theme="light"] {
+  --bg: #f5f7fa; --card: #ffffff; --border: #e0e0e0;
+  --text: #1a1a2e; --muted: #666; --dim: #999;
+  --accent: #2a9d8f; --accent2: #348a7a;
+  --green: #4caf50; --red: #e53935; --yellow: #f9a825;
+}
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
@@ -167,6 +173,38 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .error-box .title { color: #ff6b6b; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
 .error-box pre { color: #cc8888; font-size: 11px; overflow-x: auto; }
 
+/* ── Theme toggle ───────────────────────────────────── */
+.theme-toggle-btn { background: none; border: 1px solid var(--border); color: var(--text); cursor: pointer; font-size: 1.2rem; padding: 4px 10px; border-radius: 6px; transition: background 0.2s; line-height: 1; }
+.theme-toggle-btn:hover { background: rgba(78,205,196,0.1); }
+/* ── Light-mode overrides for hardcoded colors ─────── */
+[data-theme="light"] .header { background: linear-gradient(135deg, #e8eaf0 0%, #dfe3ea 100%); }
+[data-theme="light"] .header-left h1 { color: #1a1a2e; }
+[data-theme="light"] .user-chip { background: rgba(42,157,143,0.08); border-color: rgba(42,157,143,0.2); color: #333; }
+[data-theme="light"] .form-group input, [data-theme="light"] .form-group select { background: #f0f2f5; border-color: #ccc; color: #1a1a2e; }
+[data-theme="light"] .form-group input::placeholder { color: #999; }
+[data-theme="light"] .item { border-bottom-color: #e8e8f0; }
+[data-theme="light"] .section-header:hover { background: #f0f2f5; }
+[data-theme="light"] .item-content { color: #333; }
+[data-theme="light"] .item-content strong, [data-theme="light"] .item-content b { color: #1a1a2e; }
+[data-theme="light"] .item-content em { color: #555; }
+[data-theme="light"] .item-content code { background: rgba(0,0,0,0.06); color: #7c3aed; }
+[data-theme="light"] .item-content pre { background: #f8f9fa; }
+[data-theme="light"] .item-content pre code { color: #333; }
+[data-theme="light"] .item-content th { background: #f0f2f5; }
+[data-theme="light"] .item-content td { color: #444; }
+[data-theme="light"] .item-content blockquote { background: rgba(42,157,143,0.04); color: #666; }
+[data-theme="light"] .item-content h1, [data-theme="light"] .item-content h2 { color: #1a1a2e; }
+[data-theme="light"] .item-content h3 { color: #333; }
+[data-theme="light"] .stat-val, [data-theme="light"] .profile-name { color: #1a1a2e; }
+[data-theme="light"] .decision-banner.BUY { background: linear-gradient(135deg, #e8f5e9, #c8e6c9); }
+[data-theme="light"] .decision-banner.SELL { background: linear-gradient(135deg, #ffebee, #ffcdd2); }
+[data-theme="light"] .decision-banner.HOLD { background: linear-gradient(135deg, #fff8e1, #ffecb3); }
+[data-theme="light"] .decision-banner.SELL .decision-value { color: #e53935; }
+[data-theme="light"] .decision-banner.HOLD .decision-value { color: #f57f17; }
+[data-theme="light"] .tl-icon-pending { border-color: #999; }
+[data-theme="light"] .usage-history td { color: #444; }
+[data-theme="light"] .h-ticker, [data-theme="light"] .filter-bar input, [data-theme="light"] .filter-bar select { color: #1a1a2e; }
+
 /* ── Responsive ──────────────────────────────────────── */
 @media (max-width: 640px) {
   .header { padding: 12px 16px; }
@@ -202,6 +240,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
       <button id="btn-zh" onclick="setLang('zh')">ZH</button>
       <button id="btn-en" onclick="setLang('en')">EN</button>
     </div>
+    <button id="theme-toggle" class="theme-toggle-btn" title="Toggle theme">🌙</button>
     <a href="/api/auth/logout" class="btn-header" id="txt-logout"></a>
   </div>
 </div>
@@ -835,6 +874,28 @@ function fmtNum(n) {
 document.getElementById('trade-date').value = new Date().toISOString().split('T')[0];
 applyI18n();
 fetchUserInfo();
+</script>
+<script>
+(function() {
+  var toggle = document.getElementById('theme-toggle');
+  var saved = localStorage.getItem('ta_theme');
+  if (saved === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    toggle.textContent = '\u2600\uFE0F';
+  }
+  toggle.addEventListener('click', function() {
+    var current = document.documentElement.getAttribute('data-theme');
+    if (current === 'light') {
+      document.documentElement.removeAttribute('data-theme');
+      localStorage.setItem('ta_theme', 'dark');
+      toggle.textContent = '\uD83C\uDF19';
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+      localStorage.setItem('ta_theme', 'light');
+      toggle.textContent = '\u2600\uFE0F';
+    }
+  });
+})();
 </script>
 <!-- Evolvr 用户反馈 Widget -->
 <script
