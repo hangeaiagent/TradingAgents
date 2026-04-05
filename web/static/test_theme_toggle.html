@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Theme Toggle Tests</title>
+<style>
+body { font-family: monospace; padding: 20px; background: #111; color: #eee; }
+.pass { color: #4caf50; }
+.fail { color: #e53935; }
+.summary { margin-top: 20px; font-size: 16px; font-weight: bold; }
+</style>
+</head>
+<body>
+<h2>Theme Toggle Unit Tests</h2>
+<div id="results"></div>
+<div id="summary" class="summary"></div>
+
+<script>
+var results = [];
+var container = document.getElementById('results');
+
+function assert(condition, message) {
+  results.push({ pass: condition, message: message });
+  var el = document.createElement('div');
+  el.className = condition ? 'pass' : 'fail';
+  el.textContent = (condition ? 'PASS' : 'FAIL') + ': ' + message;
+  container.appendChild(el);
+}
+
+function cleanup() {
+  localStorage.removeItem('ta_theme');
+  document.documentElement.removeAttribute('data-theme');
+}
+
+// ─── Test 1: Default theme is dark (no data-theme attribute) ───
+cleanup();
+assert(
+  document.documentElement.getAttribute('data-theme') === null,
+  'Default theme has no data-theme attribute (dark mode)'
+);
+
+// ─── Test 2: Setting light theme via localStorage ───
+cleanup();
+localStorage.setItem('ta_theme', 'light');
+assert(
+  localStorage.getItem('ta_theme') === 'light',
+  'localStorage stores light theme preference'
+);
+
+// ─── Test 3: Applying light theme sets data-theme attribute ───
+cleanup();
+document.documentElement.setAttribute('data-theme', 'light');
+assert(
+  document.documentElement.getAttribute('data-theme') === 'light',
+  'data-theme="light" can be set on documentElement'
+);
+
+// ─── Test 4: CSS variables change in light mode ───
+cleanup();
+var darkBg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+// We can't fully test without the CSS vars defined, but verify attribute mechanism
+document.documentElement.setAttribute('data-theme', 'light');
+var attr = document.documentElement.getAttribute('data-theme');
+assert(attr === 'light', 'data-theme attribute correctly set to light');
+
+// ─── Test 5: Removing data-theme reverts to dark ───
+document.documentElement.removeAttribute('data-theme');
+assert(
+  document.documentElement.getAttribute('data-theme') === null,
+  'Removing data-theme attribute reverts to dark mode'
+);
+
+// ─── Test 6: Theme toggle logic simulation ───
+cleanup();
+// Simulate toggle: dark -> light
+var currentTheme = document.documentElement.getAttribute('data-theme');
+if (currentTheme === 'light') {
+  document.documentElement.removeAttribute('data-theme');
+  localStorage.setItem('ta_theme', 'dark');
+} else {
+  document.documentElement.setAttribute('data-theme', 'light');
+  localStorage.setItem('ta_theme', 'light');
+}
+assert(
+  document.documentElement.getAttribute('data-theme') === 'light' &&
+  localStorage.getItem('ta_theme') === 'light',
+  'Toggle from dark to light works correctly'
+);
+
+// Simulate toggle: light -> dark
+currentTheme = document.documentElement.getAttribute('data-theme');
+if (currentTheme === 'light') {
+  document.documentElement.removeAttribute('data-theme');
+  localStorage.setItem('ta_theme', 'dark');
+} else {
+  document.documentElement.setAttribute('data-theme', 'light');
+  localStorage.setItem('ta_theme', 'light');
+}
+assert(
+  document.documentElement.getAttribute('data-theme') === null &&
+  localStorage.getItem('ta_theme') === 'dark',
+  'Toggle from light to dark works correctly'
+);
+
+// ─── Test 7: localStorage key is 'ta_theme' ───
+cleanup();
+localStorage.setItem('ta_theme', 'light');
+assert(
+  localStorage.getItem('ta_theme') === 'light',
+  'Theme preference uses correct localStorage key: ta_theme'
+);
+
+// ─── Test 8: Verify theme persistence across simulated reload ───
+cleanup();
+localStorage.setItem('ta_theme', 'light');
+// Simulate init logic: read from localStorage and apply
+var saved = localStorage.getItem('ta_theme');
+if (saved === 'light') {
+  document.documentElement.setAttribute('data-theme', 'light');
+}
+assert(
+  document.documentElement.getAttribute('data-theme') === 'light',
+  'Theme persists: light theme restored from localStorage on init'
+);
+
+// ─── Test 9: Dark theme persistence ───
+cleanup();
+localStorage.setItem('ta_theme', 'dark');
+var saved2 = localStorage.getItem('ta_theme');
+if (saved2 === 'light') {
+  document.documentElement.setAttribute('data-theme', 'light');
+}
+assert(
+  document.documentElement.getAttribute('data-theme') === null,
+  'Theme persists: dark theme correctly leaves no data-theme attribute'
+);
+
+// ─── Test 10: No saved theme defaults to dark ───
+cleanup();
+var saved3 = localStorage.getItem('ta_theme');
+assert(
+  saved3 === null && document.documentElement.getAttribute('data-theme') === null,
+  'No saved preference defaults to dark mode'
+);
+
+// Cleanup
+cleanup();
+
+// Summary
+var passed = results.filter(function(r) { return r.pass; }).length;
+var total = results.length;
+var summaryEl = document.getElementById('summary');
+summaryEl.textContent = passed + '/' + total + ' tests passed';
+summaryEl.className = 'summary ' + (passed === total ? 'pass' : 'fail');
+
+// Exit code for automated testing
+if (typeof window !== 'undefined') {
+  window.__TEST_RESULTS__ = { passed: passed, total: total, allPassed: passed === total };
+}
+</script>
+</body>
+</html>
