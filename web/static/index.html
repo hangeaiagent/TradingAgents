@@ -6,22 +6,38 @@
 <title>TradingAgents - AI Stock Analysis</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
-:root {
+:root, [data-theme="dark"] {
   --bg: #0f1117; --card: #1a1a2e; --border: #2a2a4a;
   --text: #e0e0e0; --muted: #888; --dim: #555;
   --accent: #4ecdc4; --accent2: #44a08d;
   --green: #2d6a4f; --red: #6a2d2d; --yellow: #6a6a2d;
+  --header-bg: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  --input-bg: #0f1117; --input-border: #333; --input-text: #fff;
+  --section-hover: #222244; --chip-bg: rgba(78,205,196,0.08); --chip-border: rgba(78,205,196,0.2);
+  --error-bg: #2a0f0f; --error-text: #cc8888;
+  --pre-bg: #0d0d1a;
+}
+[data-theme="light"] {
+  --bg: #f4f6f9; --card: #ffffff; --border: #dde1e8;
+  --text: #1a1a2e; --muted: #666; --dim: #999;
+  --accent: #2a9d8f; --accent2: #268b7b;
+  --green: #2d6a4f; --red: #c0392b; --yellow: #b8860b;
+  --header-bg: linear-gradient(135deg, #ffffff 0%, #e8ecf1 100%);
+  --input-bg: #f0f2f5; --input-border: #ccc; --input-text: #222;
+  --section-hover: #f0f2f5; --chip-bg: rgba(42,157,143,0.08); --chip-border: rgba(42,157,143,0.25);
+  --error-bg: #fde8e8; --error-text: #a33;
+  --pre-bg: #f8f8fa;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
 /* ── Header ─────────────────────────────────────────── */
-.header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 14px 32px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.header-left h1 { font-size: 22px; color: #fff; }
+.header { background: var(--header-bg); padding: 14px 32px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.header-left h1 { font-size: 22px; color: var(--text); }
 .header-left h1 span { color: var(--accent); }
 .header-left .subtitle { color: var(--muted); font-size: 12px; margin-top: 2px; }
 .header-right { display: flex; align-items: center; gap: 12px; }
-.user-chip { display: flex; align-items: center; gap: 8px; background: rgba(78,205,196,0.08); border: 1px solid rgba(78,205,196,0.2); border-radius: 20px; padding: 4px 14px 4px 4px; font-size: 13px; color: #ccc; }
+.user-chip { display: flex; align-items: center; gap: 8px; background: var(--chip-bg); border: 1px solid var(--chip-border); border-radius: 20px; padding: 4px 14px 4px 4px; font-size: 13px; color: var(--muted); }
 .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--accent2); display: flex; align-items: center; justify-content: center; font-size: 13px; color: #fff; font-weight: 600; overflow: hidden; }
 .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .lang-switch { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
@@ -29,6 +45,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .lang-switch button.active { background: var(--accent); color: #fff; }
 .user-chip { cursor: pointer; position: relative; }
 .user-chip:hover { border-color: var(--accent); }
+.theme-toggle { background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 16px; line-height: 1; transition: .2s; color: var(--muted); }
+.theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
 .btn-header { color: var(--muted); font-size: 12px; text-decoration: none; padding: 5px 12px; border: 1px solid var(--border); border-radius: 6px; transition: .2s; }
 .btn-header:hover { color: #fff; border-color: var(--accent); }
 
@@ -64,8 +82,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .form-group { flex: 1; min-width: 130px; }
 .form-group label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .5px; }
 .form-group input, .form-group select {
-  width: 100%; padding: 9px 12px; background: var(--bg); border: 1px solid #333; border-radius: 8px;
-  color: #fff; font-size: 14px; outline: none; transition: border-color .2s;
+  width: 100%; padding: 9px 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px;
+  color: var(--input-text); font-size: 14px; outline: none; transition: border-color .2s;
 }
 .form-group input:focus, .form-group select:focus { border-color: var(--accent); }
 .form-group input::placeholder { color: var(--dim); }
@@ -121,7 +139,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .report { display: none; } .report.show { display: block; }
 .section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 14px; overflow: hidden; }
 .section-header { padding: 14px 22px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none; transition: background .2s; }
-.section-header:hover { background: #222244; }
+.section-header:hover { background: var(--section-hover); }
 .section-title { font-size: 15px; font-weight: 600; }
 .section-arrow { color: #666; transition: transform .2s; font-size: 12px; }
 .section-header.open .section-arrow { transform: rotate(90deg); }
@@ -142,7 +160,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .item-content li::marker { color: var(--accent); }
 .item-content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 10px 0; background: rgba(78,205,196,0.04); color: #aaa; }
 .item-content code { background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; font-family: 'SF Mono', Menlo, monospace; font-size: 12px; color: #e0b0ff; }
-.item-content pre { background: #0d0d1a; border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin: 10px 0; overflow-x: auto; }
+.item-content pre { background: var(--pre-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin: 10px 0; overflow-x: auto; }
 .item-content pre code { background: none; padding: 0; font-size: 12px; color: #ccc; }
 .item-content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
 .item-content th { background: #222; color: var(--accent); padding: 8px 12px; border: 1px solid var(--border); text-align: left; font-weight: 500; }
@@ -162,7 +180,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .btn-download:hover { background: rgba(78,205,196,0.1); border-color: var(--accent); }
 
 /* ── Error ───────────────────────────────────────────── */
-.error-box { display: none; background: #2a0f0f; border: 1px solid var(--red); border-radius: 12px; padding: 18px 24px; margin-bottom: 20px; }
+.error-box { display: none; background: var(--error-bg); border: 1px solid var(--red); border-radius: 12px; padding: 18px 24px; margin-bottom: 20px; }
 .error-box.show { display: block; }
 .error-box .title { color: #ff6b6b; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
 .error-box pre { color: #cc8888; font-size: 11px; overflow-x: auto; }
@@ -193,16 +211,25 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
         <span id="user-name-display"></span>
       </div>
       <div class="user-dropdown" id="user-dropdown">
-        <a href="/billing"><span class="menu-icon">&#9783;</span><span id="menu-billing"></span></a>
-        <a href="/history"><span class="menu-icon">&#9776;</span><span id="menu-history"></span></a>
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;" id="menu-profile-card">
+          <div class="user-avatar" id="menu-avatar" style="width:36px;height:36px;font-size:16px;"></div>
+          <div>
+            <div style="font-size:13px;color:var(--text);font-weight:600;" id="menu-user-name"></div>
+            <div style="font-size:11px;color:var(--muted);" id="menu-user-email"></div>
+          </div>
+        </div>
+        <a href="/history"><span class="menu-icon">&#128203;</span><span id="menu-history"></span></a>
+        <a href="/billing"><span class="menu-icon">&#128176;</span><span id="menu-billing"></span></a>
         <a href="/feedback"><span class="menu-icon">&#9993;</span><span id="menu-feedback"></span></a>
+        <div style="border-top:1px solid var(--border);margin:4px 0;"></div>
+        <a href="/api/auth/logout"><span class="menu-icon">&#8617;</span><span id="menu-logout"></span></a>
       </div>
     </div>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Dark/Light"></button>
     <div class="lang-switch">
       <button id="btn-zh" onclick="setLang('zh')">ZH</button>
       <button id="btn-en" onclick="setLang('en')">EN</button>
     </div>
-    <a href="/api/auth/logout" class="btn-header" id="txt-logout"></a>
   </div>
 </div>
 
@@ -319,7 +346,7 @@ const I18N = {
     tokIn: '输入 Token', tokOut: '输出 Token', tokLlm: 'LLM 调用',
     tokTool: '工具调用', tokTime: '耗时',
     download: '下载报告', dlMd: '下载 Markdown', dlPdf: '下载 PDF',
-    menuBilling: '我的账单', menuHistory: '历史分析', menuFeedback: '问题反馈',
+    menuBilling: '消费记录', menuHistory: '历史分析', menuFeedback: '问题反馈', menuLogout: '退出登录',
   },
   en: {
     subtitle: 'AI-Powered Multi-Agent Stock Analysis',
@@ -336,7 +363,7 @@ const I18N = {
     tokIn: 'Input Tokens', tokOut: 'Output Tokens', tokLlm: 'LLM Calls',
     tokTool: 'Tool Calls', tokTime: 'Elapsed',
     download: 'Download Report', dlMd: 'Markdown (.md)', dlPdf: 'PDF (.pdf)',
-    menuBilling: 'My Billing', menuHistory: 'Analysis History', menuFeedback: 'Feedback',
+    menuBilling: 'Usage & Billing', menuHistory: 'Analysis History', menuFeedback: 'Feedback', menuLogout: 'Logout',
   }
 };
 
@@ -388,7 +415,6 @@ function setLang(l) {
 
 function applyI18n() {
   document.getElementById('txt-subtitle').textContent = t('subtitle');
-  document.getElementById('txt-logout').textContent = t('logout');
   document.getElementById('lbl-ticker').textContent = t('ticker');
   document.getElementById('lbl-date').textContent = t('date');
   document.getElementById('lbl-depth').textContent = t('depth');
@@ -403,12 +429,16 @@ function applyI18n() {
   document.getElementById('menu-billing').textContent = t('menuBilling');
   document.getElementById('menu-history').textContent = t('menuHistory');
   document.getElementById('menu-feedback').textContent = t('menuFeedback');
+  document.getElementById('menu-logout').textContent = t('menuLogout');
   document.getElementById('txt-download').textContent = t('download');
   document.getElementById('btn-dl-md').textContent = t('dlMd');
   document.getElementById('btn-dl-pdf').textContent = t('dlPdf');
   // lang buttons
   document.getElementById('btn-zh').className = lang === 'zh' ? 'active' : '';
   document.getElementById('btn-en').className = lang === 'en' ? 'active' : '';
+  // theme toggle icon
+  var theme = document.documentElement.getAttribute('data-theme') || 'dark';
+  document.getElementById('theme-toggle').textContent = theme === 'dark' ? '\u263E' : '\u2600';
   // Refresh usage bar if data loaded
   if (cachedUserInfo) renderUsageBar(cachedUserInfo.usage);
 }
@@ -442,12 +472,22 @@ function renderUserChip(info) {
   // Always show email
   const email = info.email || '';
   if (email) {
-    nameEl.innerHTML = escapeHtml(displayName) + ' <span class="user-email" style="color:#666;font-size:11px;">' + escapeHtml(email) + '</span>';
+    nameEl.innerHTML = escapeHtml(displayName) + ' <span class="user-email" style="color:var(--dim);font-size:11px;">' + escapeHtml(email) + '</span>';
   } else {
     nameEl.textContent = displayName;
   }
   chip.style.display = 'flex';
   document.getElementById('user-menu-wrap').className = 'user-menu-wrap show';
+
+  // Populate dropdown profile card
+  const menuAvatar = document.getElementById('menu-avatar');
+  if (info.avatar) {
+    menuAvatar.innerHTML = '<img src="' + escapeAttr(info.avatar) + '" alt="">';
+  } else {
+    menuAvatar.textContent = displayName.charAt(0).toUpperCase();
+  }
+  document.getElementById('menu-user-name').textContent = displayName;
+  document.getElementById('menu-user-email').textContent = email;
 }
 
 function toggleUserMenu(e) {
@@ -828,6 +868,22 @@ function fmtNum(n) {
   if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
   return String(n);
 }
+
+/* ═══════════════════════════════════════════════════════
+   Theme (Dark / Light)
+   ═══════════════════════════════════════════════════════ */
+function initTheme() {
+  var saved = localStorage.getItem('ta_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+}
+function toggleTheme() {
+  var current = document.documentElement.getAttribute('data-theme') || 'dark';
+  var next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('ta_theme', next);
+  document.getElementById('theme-toggle').textContent = next === 'dark' ? '\u263E' : '\u2600';
+}
+initTheme();
 
 /* ═══════════════════════════════════════════════════════
    Init

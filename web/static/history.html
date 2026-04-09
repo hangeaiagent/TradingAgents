@@ -6,19 +6,31 @@
 <title>TradingAgents - Analysis History</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
-:root {
+:root, [data-theme="dark"] {
   --bg: #0f1117; --card: #1a1a2e; --border: #2a2a4a;
   --text: #e0e0e0; --muted: #888; --dim: #555;
   --accent: #4ecdc4; --accent2: #44a08d;
   --green: #2d6a4f; --red: #6a2d2d; --yellow: #6a6a2d;
+  --header-bg: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  --input-text: #fff; --pre-bg: #0d0d1a;
+}
+[data-theme="light"] {
+  --bg: #f4f6f9; --card: #ffffff; --border: #dde1e8;
+  --text: #1a1a2e; --muted: #666; --dim: #999;
+  --accent: #2a9d8f; --accent2: #268b7b;
+  --green: #2d6a4f; --red: #c0392b; --yellow: #b8860b;
+  --header-bg: linear-gradient(135deg, #ffffff 0%, #e8ecf1 100%);
+  --input-text: #222; --pre-bg: #f8f8fa;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
 /* ── Header ──────────────────────────────────────────── */
-.header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 14px 32px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.header { background: var(--header-bg); padding: 14px 32px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .header-left { display: flex; align-items: center; gap: 16px; }
-.header-left h1 { font-size: 22px; color: #fff; } .header-left h1 span { color: var(--accent); }
+.header-left h1 { font-size: 22px; color: var(--text); } .header-left h1 span { color: var(--accent); }
+.theme-toggle { background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 16px; line-height: 1; transition: .2s; color: var(--muted); }
+.theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
 .header-left h1 a { color: inherit; text-decoration: none; }
 .page-title { font-size: 14px; color: var(--muted); border-left: 1px solid var(--border); padding-left: 16px; }
 .header-right { display: flex; align-items: center; gap: 12px; }
@@ -35,7 +47,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .filter-bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 20px; }
 .filter-bar input, .filter-bar select {
   padding: 8px 12px; background: var(--card); border: 1px solid var(--border); border-radius: 8px;
-  color: #fff; font-size: 13px; outline: none; transition: border-color .2s;
+  color: var(--input-text); font-size: 13px; outline: none; transition: border-color .2s;
 }
 .filter-bar input:focus, .filter-bar select:focus { border-color: var(--accent); }
 .filter-bar input::placeholder { color: var(--dim); }
@@ -45,7 +57,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .history-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; overflow: hidden; transition: border-color .2s; }
 .history-card:hover { border-color: rgba(78,205,196,.3); }
 .history-row { display: flex; align-items: center; padding: 14px 20px; cursor: pointer; gap: 16px; flex-wrap: wrap; }
-.h-ticker { font-size: 16px; font-weight: 700; color: #fff; min-width: 70px; }
+.h-ticker { font-size: 16px; font-weight: 700; color: var(--text); min-width: 70px; }
 .h-decision { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 4px; }
 .h-decision.BUY { background: rgba(78,205,196,.12); color: var(--accent); }
 .h-decision.SELL { background: rgba(255,107,107,.12); color: #ff6b6b; }
@@ -59,8 +71,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 /* ── Detail view ─────────────────────────────────────── */
 .detail-overlay { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 100; overflow-y: auto; }
 .detail-overlay.open { display: block; }
-.detail-header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 14px 32px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
-.detail-title { font-size: 16px; font-weight: 600; color: #fff; }
+.detail-header { background: var(--header-bg); padding: 14px 32px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+.detail-title { font-size: 16px; font-weight: 600; color: var(--text); }
 .detail-actions { display: flex; gap: 10px; align-items: center; }
 .btn-back, .btn-dl { padding: 6px 14px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; cursor: pointer; transition: .2s; background: transparent; text-decoration: none; }
 .btn-back { color: var(--muted); } .btn-back:hover { color: #fff; border-color: var(--accent); }
@@ -82,7 +94,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 /* Report sections */
 .section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 14px; overflow: hidden; }
 .section-header { padding: 14px 22px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none; transition: background .2s; }
-.section-header:hover { background: #222244; }
+.section-header:hover { background: rgba(78,205,196,0.05); }
 .section-title { font-size: 15px; font-weight: 600; }
 .section-arrow { color: #666; transition: transform .2s; font-size: 12px; }
 .section-header.open .section-arrow { transform: rotate(90deg); }
@@ -104,7 +116,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .item-content li { margin: 4px 0; } .item-content li::marker { color: var(--accent); }
 .item-content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 10px 0; background: rgba(78,205,196,0.04); color: #aaa; }
 .item-content code { background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; font-family: 'SF Mono', Menlo, monospace; font-size: 12px; color: #e0b0ff; }
-.item-content pre { background: #0d0d1a; border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin: 10px 0; overflow-x: auto; }
+.item-content pre { background: var(--pre-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin: 10px 0; overflow-x: auto; }
 .item-content pre code { background: none; padding: 0; font-size: 12px; color: #ccc; }
 .item-content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
 .item-content th { background: #222; color: var(--accent); padding: 8px 12px; border: 1px solid var(--border); text-align: left; font-weight: 500; }
@@ -130,6 +142,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
     <div class="page-title" id="txt-page-title"></div>
   </div>
   <div class="header-right">
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()"></button>
     <div class="lang-switch">
       <button id="btn-zh" onclick="setLang('zh')">ZH</button>
       <button id="btn-en" onclick="setLang('en')">EN</button>
@@ -390,6 +403,11 @@ function fmtNum(n) { if (n==null) return '0'; if (n>=1e6) return (n/1e6).toFixed
    ═══════════════════════════════════════════════════════ */
 document.getElementById('f-ticker').addEventListener('input', renderList);
 document.getElementById('f-decision').addEventListener('change', renderList);
+/* Theme */
+function initTheme() { var s = localStorage.getItem('ta_theme') || 'dark'; document.documentElement.setAttribute('data-theme', s); document.getElementById('theme-toggle').textContent = s === 'dark' ? '\u263E' : '\u2600'; }
+function toggleTheme() { var c = document.documentElement.getAttribute('data-theme') || 'dark'; var n = c === 'dark' ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', n); localStorage.setItem('ta_theme', n); document.getElementById('theme-toggle').textContent = n === 'dark' ? '\u263E' : '\u2600'; }
+initTheme();
+
 applyI18n();
 loadHistory();
 </script>

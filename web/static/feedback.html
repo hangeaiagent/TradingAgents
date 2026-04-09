@@ -5,20 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TradingAgents - My Feedback</title>
 <style>
-:root {
+:root, [data-theme="dark"] {
   --bg: #0f1117; --card: #1a1a2e; --border: #2a2a4a;
   --text: #e0e0e0; --muted: #888; --dim: #555;
   --accent: #4ecdc4; --accent2: #44a08d;
   --green: #22c55e; --red: #ef4444; --yellow: #f59e0b;
   --blue: #3b82f6; --purple: #8b5cf6; --gray: #6b7280;
+  --header-bg: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+[data-theme="light"] {
+  --bg: #f4f6f9; --card: #ffffff; --border: #dde1e8;
+  --text: #1a1a2e; --muted: #666; --dim: #999;
+  --accent: #2a9d8f; --accent2: #268b7b;
+  --green: #16a34a; --red: #dc2626; --yellow: #d97706;
+  --blue: #2563eb; --purple: #7c3aed; --gray: #6b7280;
+  --header-bg: linear-gradient(135deg, #ffffff 0%, #e8ecf1 100%);
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
 /* ── Header ──────────────────────────────────────────── */
-.header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 14px 32px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.header { background: var(--header-bg); padding: 14px 32px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .header-left { display: flex; align-items: center; gap: 16px; }
-.header-left h1 { font-size: 22px; color: #fff; } .header-left h1 span { color: var(--accent); }
+.header-left h1 { font-size: 22px; color: var(--text); } .header-left h1 span { color: var(--accent); }
+.theme-toggle { background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 16px; line-height: 1; transition: .2s; color: var(--muted); }
+.theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
 .header-left h1 a { color: inherit; text-decoration: none; }
 .page-title { font-size: 14px; color: var(--muted); border-left: 1px solid var(--border); padding-left: 16px; }
 .header-right { display: flex; align-items: center; gap: 12px; }
@@ -74,7 +85,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 
 /* ── Refresh button ──────────────────────────────────── */
 .refresh-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.refresh-bar h2 { font-size: 16px; color: #fff; font-weight: 600; }
+.refresh-bar h2 { font-size: 16px; color: var(--text); font-weight: 600; }
 .btn-refresh { background: none; border: 1px solid var(--border); color: var(--muted); font-size: 12px; padding: 6px 14px; border-radius: 6px; cursor: pointer; transition: .2s; }
 .btn-refresh:hover { color: #fff; border-color: var(--accent); }
 
@@ -94,6 +105,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
     <div class="page-title" id="page-title"></div>
   </div>
   <div class="header-right">
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()"></button>
     <div class="lang-switch">
       <button id="btn-zh" onclick="setLang('zh')">ZH</button>
       <button id="btn-en" onclick="setLang('en')">EN</button>
@@ -395,6 +407,11 @@ function fmtDate(s) {
 /* ═══════════════════════════════════════════════════════
    Init
    ═══════════════════════════════════════════════════════ */
+/* Theme */
+function initTheme() { var s = localStorage.getItem('ta_theme') || 'dark'; document.documentElement.setAttribute('data-theme', s); document.getElementById('theme-toggle').textContent = s === 'dark' ? '\u263E' : '\u2600'; }
+function toggleTheme() { var c = document.documentElement.getAttribute('data-theme') || 'dark'; var n = c === 'dark' ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', n); localStorage.setItem('ta_theme', n); document.getElementById('theme-toggle').textContent = n === 'dark' ? '\u263E' : '\u2600'; }
+initTheme();
+
 applyI18n();
 init();
 </script>

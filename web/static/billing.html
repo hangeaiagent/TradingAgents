@@ -5,24 +5,38 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TradingAgents - Billing</title>
 <style>
-:root {
+:root, [data-theme="dark"] {
   --bg: #0f1117; --card: #1a1a2e; --border: #2a2a4a;
   --text: #e0e0e0; --muted: #888; --dim: #555;
   --accent: #4ecdc4; --accent2: #44a08d;
   --green: #2d6a4f; --red: #6a2d2d; --yellow: #6a6a2d;
+  --header-bg: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  --input-bg: #0f1117; --input-border: #333; --input-text: #fff;
+  --stat-val: #fff; --profile-name: #fff;
+}
+[data-theme="light"] {
+  --bg: #f4f6f9; --card: #ffffff; --border: #dde1e8;
+  --text: #1a1a2e; --muted: #666; --dim: #999;
+  --accent: #2a9d8f; --accent2: #268b7b;
+  --green: #2d6a4f; --red: #c0392b; --yellow: #b8860b;
+  --header-bg: linear-gradient(135deg, #ffffff 0%, #e8ecf1 100%);
+  --input-bg: #f0f2f5; --input-border: #ccc; --input-text: #222;
+  --stat-val: #222; --profile-name: #222;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
 /* ── Header ──────────────────────────────────────────── */
-.header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 14px 32px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.header { background: var(--header-bg); padding: 14px 32px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .header-left { display: flex; align-items: center; gap: 16px; }
-.header-left h1 { font-size: 22px; color: #fff; }
+.header-left h1 { font-size: 22px; color: var(--text); }
 .header-left h1 span { color: var(--accent); }
 .header-left h1 a { color: inherit; text-decoration: none; }
 .page-title { font-size: 14px; color: var(--muted); border-left: 1px solid var(--border); padding-left: 16px; }
 .header-right { display: flex; align-items: center; gap: 12px; }
-.user-chip { display: flex; align-items: center; gap: 8px; background: rgba(78,205,196,0.08); border: 1px solid rgba(78,205,196,0.2); border-radius: 20px; padding: 4px 14px 4px 4px; font-size: 13px; color: #ccc; }
+.user-chip { display: flex; align-items: center; gap: 8px; background: rgba(78,205,196,0.08); border: 1px solid rgba(78,205,196,0.2); border-radius: 20px; padding: 4px 14px 4px 4px; font-size: 13px; color: var(--muted); }
+.theme-toggle { background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 16px; line-height: 1; transition: .2s; color: var(--muted); }
+.theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
 .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--accent2); display: flex; align-items: center; justify-content: center; font-size: 13px; color: #fff; font-weight: 600; overflow: hidden; }
 .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .lang-switch { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
@@ -38,13 +52,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .profile-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px 28px; margin-bottom: 24px; display: flex; align-items: center; gap: 18px; }
 .profile-avatar-lg { width: 56px; height: 56px; border-radius: 50%; background: var(--accent2); display: flex; align-items: center; justify-content: center; font-size: 24px; color: #fff; font-weight: 600; overflow: hidden; flex-shrink: 0; }
 .profile-avatar-lg img { width: 100%; height: 100%; object-fit: cover; }
-.profile-name { font-size: 18px; font-weight: 600; color: #fff; }
+.profile-name { font-size: 18px; font-weight: 600; color: var(--profile-name); }
 .profile-email { font-size: 13px; color: var(--muted); margin-top: 3px; }
 
 /* ── Stat cards ──────────────────────────────────────── */
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 28px; }
 .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
-.stat-val { font-size: 26px; font-weight: 700; color: #fff; }
+.stat-val { font-size: 26px; font-weight: 700; color: var(--stat-val); }
 .stat-lbl { font-size: 12px; color: var(--muted); margin-top: 4px; }
 
 /* ── Section ─────────────────────────────────────────── */
@@ -63,8 +77,8 @@ tr:hover td { background: rgba(78,205,196,0.03); }
 /* ── Filter bar ──────────────────────────────────────── */
 .filter-bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
 .filter-bar input, .filter-bar select {
-  padding: 7px 12px; background: var(--bg); border: 1px solid #333; border-radius: 6px;
-  color: #fff; font-size: 13px; outline: none; transition: border-color .2s;
+  padding: 7px 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px;
+  color: var(--input-text); font-size: 13px; outline: none; transition: border-color .2s;
 }
 .filter-bar input:focus, .filter-bar select:focus { border-color: var(--accent); }
 .filter-bar input::placeholder { color: var(--dim); }
@@ -97,6 +111,7 @@ tr:hover td { background: rgba(78,205,196,0.03); }
       <div class="user-avatar" id="user-avatar"></div>
       <span id="user-name-display"></span>
     </div>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()"></button>
     <div class="lang-switch">
       <button id="btn-zh" onclick="setLang('zh')">ZH</button>
       <button id="btn-en" onclick="setLang('en')">EN</button>
@@ -385,6 +400,11 @@ function fmtTime(sec) {
 document.getElementById('filter-ticker').addEventListener('input', applyFilters);
 document.getElementById('filter-month').addEventListener('change', applyFilters);
 document.getElementById('filter-decision').addEventListener('change', applyFilters);
+
+/* Theme */
+function initTheme() { var s = localStorage.getItem('ta_theme') || 'dark'; document.documentElement.setAttribute('data-theme', s); document.getElementById('theme-toggle').textContent = s === 'dark' ? '\u263E' : '\u2600'; }
+function toggleTheme() { var c = document.documentElement.getAttribute('data-theme') || 'dark'; var n = c === 'dark' ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', n); localStorage.setItem('ta_theme', n); document.getElementById('theme-toggle').textContent = n === 'dark' ? '\u263E' : '\u2600'; }
+initTheme();
 
 applyI18n();
 loadData();
