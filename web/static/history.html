@@ -12,6 +12,12 @@
   --accent: #4ecdc4; --accent2: #44a08d;
   --green: #2d6a4f; --red: #6a2d2d; --yellow: #6a6a2d;
 }
+[data-theme="light"] {
+  --bg: #f5f7fa; --card: #ffffff; --border: #e0e0e0;
+  --text: #1a1a2e; --muted: #666; --dim: #999;
+  --accent: #2a9d8f; --accent2: #348a7a;
+  --green: #4caf50; --red: #e53935; --yellow: #f9a825;
+}
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
@@ -113,6 +119,31 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 
 .empty { text-align: center; padding: 60px 20px; color: var(--dim); font-size: 15px; }
 
+/* ── Theme toggle ───────────────────────────────────── */
+.theme-toggle-btn { background: none; border: 1px solid var(--border); color: var(--text); cursor: pointer; font-size: 1.2rem; padding: 4px 10px; border-radius: 6px; transition: background 0.2s; line-height: 1; }
+.theme-toggle-btn:hover { background: rgba(78,205,196,0.1); }
+[data-theme="light"] .header, [data-theme="light"] .detail-header { background: linear-gradient(135deg, #e8eaf0 0%, #dfe3ea 100%); }
+[data-theme="light"] .header-left h1, [data-theme="light"] .detail-title { color: #1a1a2e; }
+[data-theme="light"] .h-ticker { color: #1a1a2e; }
+[data-theme="light"] .section-header:hover { background: #f0f2f5; }
+[data-theme="light"] .item-content { color: #333; }
+[data-theme="light"] .item-content strong, [data-theme="light"] .item-content b { color: #1a1a2e; }
+[data-theme="light"] .item-content em { color: #555; }
+[data-theme="light"] .item-content code { background: rgba(0,0,0,0.06); color: #7c3aed; }
+[data-theme="light"] .item-content pre { background: #f8f9fa; }
+[data-theme="light"] .item-content pre code { color: #333; }
+[data-theme="light"] .item-content th { background: #f0f2f5; }
+[data-theme="light"] .item-content td { color: #444; }
+[data-theme="light"] .item { border-bottom-color: #e8e8f0; }
+[data-theme="light"] .detail-overlay { background: var(--bg); }
+[data-theme="light"] .filter-bar input, [data-theme="light"] .filter-bar select { color: #1a1a2e; }
+[data-theme="light"] .decision-banner.BUY { background: linear-gradient(135deg, #e8f5e9, #c8e6c9); }
+[data-theme="light"] .decision-banner.SELL { background: linear-gradient(135deg, #ffebee, #ffcdd2); }
+[data-theme="light"] .decision-banner.HOLD { background: linear-gradient(135deg, #fff8e1, #ffecb3); }
+[data-theme="light"] .decision-banner.SELL .decision-value { color: #e53935; }
+[data-theme="light"] .decision-banner.HOLD .decision-value { color: #f57f17; }
+[data-theme="light"] .decision-value { color: var(--accent); }
+
 @media (max-width: 640px) {
   .header { padding: 12px 16px; }
   .container { padding: 16px 10px; }
@@ -134,6 +165,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
       <button id="btn-zh" onclick="setLang('zh')">ZH</button>
       <button id="btn-en" onclick="setLang('en')">EN</button>
     </div>
+    <button id="theme-toggle" class="theme-toggle-btn" title="Toggle theme">🌙</button>
     <a href="/feedback" class="btn-header" id="txt-feedback"></a>
     <a href="/" class="btn-header" id="txt-back"></a>
     <a href="/api/auth/logout" class="btn-header" id="txt-logout"></a>
@@ -392,6 +424,27 @@ document.getElementById('f-ticker').addEventListener('input', renderList);
 document.getElementById('f-decision').addEventListener('change', renderList);
 applyI18n();
 loadHistory();
+
+(function() {
+  var toggle = document.getElementById('theme-toggle');
+  var saved = localStorage.getItem('ta_theme');
+  if (saved === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    toggle.textContent = '\u2600\uFE0F';
+  }
+  toggle.addEventListener('click', function() {
+    var current = document.documentElement.getAttribute('data-theme');
+    if (current === 'light') {
+      document.documentElement.removeAttribute('data-theme');
+      localStorage.setItem('ta_theme', 'dark');
+      toggle.textContent = '\uD83C\uDF19';
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+      localStorage.setItem('ta_theme', 'light');
+      toggle.textContent = '\u2600\uFE0F';
+    }
+  });
+})();
 </script>
 <!-- Evolvr 用户反馈 Widget -->
 <script
