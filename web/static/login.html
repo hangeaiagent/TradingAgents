@@ -5,30 +5,42 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TradingAgents - Login</title>
 <style>
+:root {
+  --bg: #0f1117; --card: #1a1a2e; --border: #2a2a4a;
+  --text: #e0e0e0; --muted: #888; --dim: #555;
+  --accent: #4ecdc4; --accent2: #44a08d;
+}
+[data-theme="light"] {
+  --bg: #f5f7fa; --card: #ffffff; --border: #e0e0e0;
+  --text: #1a1a2e; --muted: #666; --dim: #999;
+  --accent: #2a9d8f; --accent2: #348a7a;
+}
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 
 .login-card {
-  background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 16px;
+  background: var(--card); border: 1px solid var(--border); border-radius: 16px;
   padding: 48px 40px; text-align: center; max-width: 420px; width: 90%;
 }
-.logo h1 { font-size: 32px; color: #fff; margin-bottom: 6px; }
-.logo h1 span { color: #4ecdc4; }
-.logo .subtitle { color: #888; font-size: 14px; margin-bottom: 36px; }
-.divider { height: 1px; background: #2a2a4a; margin: 0 0 32px; }
-.login-hint { color: #888; font-size: 14px; margin-bottom: 24px; line-height: 1.6; }
+.logo h1 { font-size: 32px; color: var(--text); margin-bottom: 6px; }
+.logo h1 span { color: var(--accent); }
+.logo .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 36px; }
+.divider { height: 1px; background: var(--border); margin: 0 0 32px; }
+.login-hint { color: var(--muted); font-size: 14px; margin-bottom: 24px; line-height: 1.6; }
 .btn-login {
   display: inline-block; padding: 14px 40px;
-  background: linear-gradient(135deg, #4ecdc4, #44a08d); color: #fff; border: none;
+  background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; border: none;
   border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer;
   transition: opacity 0.2s, transform 0.15s; text-decoration: none; letter-spacing: 0.5px;
 }
 .btn-login:hover { opacity: 0.88; transform: translateY(-1px); }
 .btn-login:active { transform: translateY(0); }
-.lang-switch { margin-top: 24px; display: flex; justify-content: center; gap: 0; border: 1px solid #2a2a4a; border-radius: 6px; overflow: hidden; display: inline-flex; }
-.lang-switch button { background: transparent; border: none; color: #888; font-size: 12px; padding: 4px 14px; cursor: pointer; transition: .2s; }
-.lang-switch button.active { background: #4ecdc4; color: #fff; }
-.footer { margin-top: 32px; color: #555; font-size: 12px; }
+.lang-switch { margin-top: 24px; display: flex; justify-content: center; gap: 0; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; display: inline-flex; }
+.lang-switch button { background: transparent; border: none; color: var(--muted); font-size: 12px; padding: 4px 14px; cursor: pointer; transition: .2s; }
+.lang-switch button.active { background: var(--accent); color: #fff; }
+.theme-toggle-btn { background: none; border: 1px solid var(--border); color: var(--text); cursor: pointer; font-size: 1.2rem; padding: 4px 10px; border-radius: 6px; transition: background 0.2s; line-height: 1; margin-top: 12px; }
+.theme-toggle-btn:hover { background: rgba(78,205,196,0.1); }
+.footer { margin-top: 32px; color: var(--dim); font-size: 12px; }
 </style>
 </head>
 <body>
@@ -47,6 +59,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
       <button id="btn-zh" onclick="setLang('zh')">ZH</button>
       <button id="btn-en" onclick="setLang('en')">EN</button>
     </div>
+    <br>
+    <button id="theme-toggle" class="theme-toggle-btn" title="Toggle theme">🌙</button>
   </div>
 </div>
 <div class="footer">Powered by TradingAgents v0.2.1</div>
