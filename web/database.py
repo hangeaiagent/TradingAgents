@@ -129,8 +129,13 @@ class Database:
 
     def __init__(self):
         if DATABASE_URL:
-            self._backend = "pg"
-            self._init_pg()
+            try:
+                self._backend = "pg"
+                self._init_pg()
+            except Exception as e:
+                log.warning("PostgreSQL connection failed (%s), falling back to SQLite", e)
+                self._backend = "sqlite"
+                self._init_sqlite()
         else:
             self._backend = "sqlite"
             self._init_sqlite()
