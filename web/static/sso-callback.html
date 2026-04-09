@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TradingAgents - SSO Login</title>
 <style>
-body { background: #0f1117; color: #e0e0e0; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+:root { --bg: #0f1117; --text: #e0e0e0; --accent: #4ecdc4; --border: #2a2a4a; }
+[data-theme="light"] { --bg: #f5f7fa; --text: #1a1a2e; --accent: #2a9d8f; --border: #e0e0e0; }
+body { background: var(--bg); color: var(--text); display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
 .msg { text-align: center; }
-.msg h2 { color: #4ecdc4; margin-bottom: 12px; }
-.spinner { width: 32px; height: 32px; border: 3px solid #2a2a4a; border-top-color: #4ecdc4; border-radius: 50%; animation: spin .7s linear infinite; margin: 0 auto 16px; }
+.msg h2 { color: var(--accent); margin-bottom: 12px; }
+.spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; margin: 0 auto 16px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
@@ -18,6 +20,9 @@ body { background: #0f1117; color: #e0e0e0; display: flex; align-items: center; 
   <h2>SSO</h2>
   <p id="status"></p>
 </div>
+<script>
+if (localStorage.getItem('ta_theme') === 'light') document.documentElement.setAttribute('data-theme', 'light');
+</script>
 <script>
 (function() {
   var hash = window.location.hash;
